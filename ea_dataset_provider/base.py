@@ -1,4 +1,5 @@
 import pathlib
+from abc import abstractmethod
 from typing import Literal, Optional, Tuple
 
 import pandas as pd
@@ -53,16 +54,18 @@ class EADataset:
         self.rel_triples_right = self._read_triples(
             file_name=self.file_name_rel_triples_right
         )
-        self.attr_triples_left = self._read_triples(
-            file_name=self.file_name_attr_triples_left
-        )
-        self.attr_triples_right = self._read_triples(
-            file_name=self.file_name_attr_triples_right
-        )
+        if self.file_name_attr_triples_left:
+            self.attr_triples_left = self._read_triples(
+                file_name=self.file_name_attr_triples_left
+            )
+        if self.file_name_attr_triples_right:
+            self.attr_triples_right = self._read_triples(
+                file_name=self.file_name_attr_triples_right
+            )
 
-    def _read_triples(self, file_name: str, is_links: bool = False):
+    def _read_triples(self, file_name: str, is_links: bool = False) -> pd.DataFrame:
         columns = (
-            list(EA_SIDES) if is_links else [LABEL_HEAD, LABEL_RELATION, LABEL_TAIL]
+            list(EA_SIDES) if is_links else (LABEL_HEAD, LABEL_RELATION, LABEL_TAIL)
         )
         return read_zipfile_csv(
             path=self.zip_path,
@@ -74,5 +77,9 @@ class EADataset:
             dtype=str,
         )
 
-    def __repr__(self):
-        return f"{self.__class__.__name__}(rel_triples_left={len(self.rel_triples_left)}, rel_triples_right={len(self.rel_triples_right)}, attr_triples_left={len(self.attr_triples_left)}, attr_triples_right={len(self.attr_triples_right)})"
+    @abstractmethod
+    def _param_repr(self) -> str:
+        raise NotImplementedError
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self._param_repr()}rel_triples_left={len(self.rel_triples_left)}, rel_triples_right={len(self.rel_triples_right)}, attr_triples_left={len(self.attr_triples_left)}, attr_triples_right={len(self.attr_triples_right)})"

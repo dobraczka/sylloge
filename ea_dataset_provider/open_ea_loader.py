@@ -17,7 +17,7 @@ GRAPH_PAIRS: Tuple[GraphPair, ...] = (D_W, D_Y, EN_DE, EN_FR)
 # graph sizes
 GraphSize = Literal["15K", "100K"]
 SIZE_15K: GraphSize = "15K"
-SIZE_100K: GraphSize = "15K"
+SIZE_100K: GraphSize = "100K"
 GRAPH_SIZES = (SIZE_15K, SIZE_100K)
 
 # graph versions
@@ -52,15 +52,25 @@ class OpenEA(EADataset):
             raise ValueError(f"size must be one of {GRAPH_SIZES}")
         if version not in GRAPH_VERSIONS:
             raise ValueError(f"version must be one of {GRAPH_VERSIONS}")
+
+        self.graph_pair = graph_pair
+        self.size = size
+        self.version = version
+        self.load_pre_split_fold = load_pre_split_fold
+
         # ensure zip file is present
         zip_path = OPEN_EA_MODULE.ensure(
             url=OpenEA.FIGSHARE_LINK,
             name="OpenEA_dataset_v2.0.zip",
             download_kwargs=dict(hexdigests=dict(sha512=OpenEA.SHA512)),
         )
+
         # save relative paths beforehand so they are present for loading
         inner_path = pathlib.PurePosixPath(
             "OpenEA_dataset_v2.0", f"{graph_pair}_{size}_{version}"
         )
         # for file names we can use defaults
         super().__init__(zip_path=zip_path, inner_path=inner_path)
+
+    def _param_repr(self) -> str:
+        return f"graph_pair={self.graph_pair}, size={self.size}, version={self.version}, load_pre_split_fold={self.load_pre_split_fold}, "
