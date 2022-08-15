@@ -40,9 +40,9 @@ jobs:
         key: ea-dataset-provider
     - name: list files
       run: |
-         if [ "$RUNNER_OS" == "Linux" ]; then
-            ls ~/.data/ea-dataset-provider/
-         fi
+           if [ "$RUNNER_OS" == "Linux" ]; then
+              ls ~/.data/ea-dataset-provider/
+           fi
   shell: bash
 
     - name: Test with nox
