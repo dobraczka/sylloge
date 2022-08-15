@@ -3,16 +3,12 @@ from nox_poetry import Session, session
 
 @session()
 def tests(session: Session) -> None:
-    args = session.posargs or [
-        "--cov=ea_dataset_provider/",
-        "--cov-report=xml",
-        "tests/",
-    ]
+    args = session.posargs or ["--cov", "--cov-report=xml"]
     session.install(".[all]")
     session.install("pytest")
     session.install("pytest-cov")
     session.install("pytest-mock")
-    session.run("pytest", *args)
+    session.run("pytest", "-s", *args)
 
 
 locations = ["ea_dataset_provider", "tests", "noxfile.py"]
