@@ -8,7 +8,7 @@ def tests(session: Session) -> None:
     session.install("pytest")
     session.install("pytest-cov")
     session.install("pytest-mock")
-    session.run("pytest", "-s", *args)
+    session.run("pytest", *args)
 
 
 locations = ["ea_dataset_provider", "tests", "noxfile.py"]

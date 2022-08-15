@@ -38,6 +38,13 @@ jobs:
         # datasets are stored in `~/.data/ea-dataset-provider/`
         path: ~/.data/ea-dataset-provider/
         key: ea-dataset-provider
+    - name: list files
+      run: |
+         if [ "$RUNNER_OS" == "Linux" ]; then
+            ls ~/.data/ea-dataset-provider/
+         fi
+  shell: bash
+
     - name: Test with nox
       run: nox -s tests
 
