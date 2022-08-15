@@ -43,8 +43,7 @@ jobs:
            if [ "$RUNNER_OS" == "Linux" ]; then
               ls ~/.data/ea-dataset-provider/
            fi
-  shell: bash
-
+      shell: bash
     - name: Test with nox
       run: nox -s tests
 
