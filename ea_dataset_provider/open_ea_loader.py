@@ -28,6 +28,7 @@ GRAPH_VERSIONS = (V1, V2)
 
 
 class OpenEA(EADataset):
+    # reference: http://www.vldb.org/pvldb/vol13/p2326-sun.pdf
 
     #: The link to the zip file
     FIGSHARE_LINK: str = "https://figshare.com/ndownloader/files/34234391"
