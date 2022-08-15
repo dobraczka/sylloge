@@ -3,7 +3,11 @@ from nox_poetry import Session, session
 
 @session()
 def tests(session: Session) -> None:
-    args = session.posargs or ["--cov=ea_dataset_provider/", "--cov-report=xml", "tests/"]
+    args = session.posargs or [
+        "--cov=ea_dataset_provider/",
+        "--cov-report=xml",
+        "tests/",
+    ]
     session.install(".[all]")
     session.install("pytest")
     session.install("pytest-cov")
@@ -37,7 +41,7 @@ def style_checking(session: Session) -> None:
         "darglint",
         "pydocstyle",
     )
-    session.run("pflake8","--docstring-style", "sphinx",  *args)
+    session.run("pflake8", "--docstring-style", "sphinx", *args)
 
 
 @session()

@@ -32,6 +32,12 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install poetry
         python -m pip install nox_poetry
+    - name: Cache dataset downloads
+    - uses: actions/cache@v3
+        with:
+          # datasets are stored in `~/.data/ea-dataset-provider/`
+          path: ~/.data/ea-dataset-provider/
+          key: ea-dataset-provider
     - name: Test with nox
       run: nox -s tests
 
