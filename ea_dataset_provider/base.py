@@ -15,7 +15,7 @@ EA_SIDE_LEFT: EASide = "left"
 EA_SIDE_RIGHT: EASide = "right"
 EA_SIDES: Tuple[EASide, EASide] = (EA_SIDE_LEFT, EA_SIDE_RIGHT)
 
-BASE_DATASET_MODULE = pystow.module("ea-dataset-loader")
+BASE_DATASET_MODULE = pystow.module("ea-dataset-provider")
 
 
 class EADataset:

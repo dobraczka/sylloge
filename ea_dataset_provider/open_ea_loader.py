@@ -2,7 +2,7 @@
 import pathlib
 from typing import Literal, Tuple
 
-from base import BASE_DATASET_MODULE, EADataset
+from .base import BASE_DATASET_MODULE, EADataset
 
 OPEN_EA_MODULE = BASE_DATASET_MODULE.submodule("open_ea")
 
@@ -64,7 +64,3 @@ class OpenEA(EADataset):
         )
         # for file names we can use defaults
         super().__init__(zip_path=zip_path, inner_path=inner_path)
-
-
-if __name__ == "__main__":
-    print(OpenEA())
