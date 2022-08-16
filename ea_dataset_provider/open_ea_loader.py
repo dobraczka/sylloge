@@ -2,7 +2,7 @@
 import pathlib
 from typing import Literal, Tuple
 
-from .base import BASE_DATASET_MODULE, EADataset
+from .base import BASE_DATASET_MODULE, ZipEADatasetWithPreSplitFolds
 
 OPEN_EA_MODULE = BASE_DATASET_MODULE.submodule("open_ea")
 
@@ -27,7 +27,7 @@ V2: GraphVersion = "V2"
 GRAPH_VERSIONS = (V1, V2)
 
 
-class OpenEA(EADataset):
+class OpenEA(ZipEADatasetWithPreSplitFolds):
     # reference: http://www.vldb.org/pvldb/vol13/p2326-sun.pdf
 
     #: The link to the zip file
