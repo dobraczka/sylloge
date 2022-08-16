@@ -29,7 +29,9 @@ class MovieGraphBenchmark(EADataset):
         self.graph_pair = graph_pair
         ds = load_data(pair=graph_pair, data_path=str(MOVIEGRAPH_PATH))
         folds = [
-            TrainTestValSplit(train=fold.train_links, test=fold.test_links, val=fold.valid_links)
+            TrainTestValSplit(
+                train=fold.train_links, test=fold.test_links, val=fold.valid_links
+            )
             for fold in ds.folds
         ]
         super().__init__(
