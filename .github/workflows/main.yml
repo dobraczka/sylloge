@@ -37,7 +37,7 @@ jobs:
       with:
         # datasets are stored in `~/.data/ea-dataset-provider/`
         path: ~/.data/ea-dataset-provider/
-        key: ea-dataset-provider
+        key: ${{ runner.os }}-build-${{ matrix.python-version }}
     - name: Test with nox
       run: nox -s tests
 
