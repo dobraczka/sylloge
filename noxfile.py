@@ -44,7 +44,7 @@ def style_checking(session: Session) -> None:
 def type_checking(session: Session) -> None:
     args = session.posargs or locations
     session.run_always("poetry", "install", external=True)
-    session.run("mypy", "--ignore-missing-imports", *args)
+    session.run("mypy", "--install-types", "--ignore-missing-imports", *args)
 
 
 @session()
