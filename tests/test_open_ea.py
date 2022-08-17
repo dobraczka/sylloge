@@ -187,6 +187,7 @@ def test_open_ea(params: Dict, statistic: DatasetStatistics):
     assert len(ds.attr_triples_left) == statistic.num_attr_triples_left
     assert len(ds.attr_triples_right) == statistic.num_attr_triples_right
     assert len(ds.ent_links) == statistic.num_ent_links
+    assert ds.folds is not None
     for fold in ds.folds:
         if params["size"] == SIZE_15K:
             assert len(fold.train) == 3000

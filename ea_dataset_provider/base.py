@@ -1,7 +1,7 @@
 import pathlib
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import Literal, Sequence, Tuple
+from typing import Literal, Optional, Sequence, Tuple, Union
 
 import pandas as pd
 import pystow
@@ -34,7 +34,7 @@ class EADataset:
     attr_triples_left: pd.DataFrame
     attr_triples_right: pd.DataFrame
     ent_links: pd.DataFrame
-    folds: Sequence[TrainTestValSplit] = None
+    folds: Optional[Sequence[TrainTestValSplit]] = None
 
 
 class ZipEADataset(EADataset):
@@ -88,7 +88,9 @@ class ZipEADataset(EADataset):
             ent_links=ent_links,
         )
 
-    def _read_triples(self, file_name: str, is_links: bool = False) -> pd.DataFrame:
+    def _read_triples(
+        self, file_name: Union[str, pathlib.Path], is_links: bool = False
+    ) -> pd.DataFrame:
         columns = (
             list(EA_SIDES) if is_links else (LABEL_HEAD, LABEL_RELATION, LABEL_TAIL)
         )
@@ -165,4 +167,5 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset):
             self.folds.append(TrainTestValSplit(train=train, test=test, val=val))
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self._param_repr()}rel_triples_left={len(self.rel_triples_left)}, rel_triples_right={len(self.rel_triples_right)}, attr_triples_left={len(self.attr_triples_left)}, attr_triples_right={len(self.attr_triples_right)}, ent_links={len(self.ent_links)}, folds={len(self.folds)})"
+        len_folds = None if not self.folds else len(self.folds)
+        return f"{self.__class__.__name__}({self._param_repr()}rel_triples_left={len(self.rel_triples_left)}, rel_triples_right={len(self.rel_triples_right)}, attr_triples_left={len(self.attr_triples_left)}, attr_triples_right={len(self.attr_triples_right)}, ent_links={len(self.ent_links)}, folds={len_folds})"

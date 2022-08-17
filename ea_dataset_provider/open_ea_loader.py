@@ -82,4 +82,6 @@ class OpenEA(ZipEADatasetWithPreSplitFolds):
         super().__init__(zip_path=zip_path, inner_path=inner_path)
 
     def _param_repr(self) -> str:
-        return f"graph_pair={self.graph_pair}, size={self.size}, version={self.version}, load_pre_split_fold={self.load_pre_split_fold}, "
+        return (
+            f"graph_pair={self.graph_pair}, size={self.size}, version={self.version}, "
+        )

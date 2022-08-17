@@ -52,6 +52,7 @@ def test_movie_benchmark(params: Dict, statistic: DatasetStatistics):
     assert len(ds.attr_triples_left) == statistic.num_attr_triples_left
     assert len(ds.attr_triples_right) == statistic.num_attr_triples_right
     assert len(ds.ent_links) == statistic.num_ent_links
+    assert ds.folds is not None
     if params["graph_pair"] == IMDB_TMDB:
         for fold in ds.folds:
             assert len(fold.train) == 396 or len(fold.train) == 395
