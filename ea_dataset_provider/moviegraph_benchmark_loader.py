@@ -16,12 +16,19 @@ GRAPH_PAIRS: Tuple[GraphPair, ...] = (IMDB_TMDB, IMDB_TVDB, TMDB_TVDB)
 
 
 class MovieGraphBenchmark(EADataset):
-    # reference: http://ceur-ws.org/Vol-2873/paper8.pdf
+    """Class containing the movie graph benchmark published in
+    `Obraczka, D. et. al. (2021) Embedding-Assisted Entity Resolution for Knowledge Graphs <http://ceur-ws.org/Vol-2873/paper8.pdf>`_,
+    *Proceedings of the 2nd International Workshop on Knowledge Graph Construction co-located with 18th Extended Semantic Web Conference*"""
 
     def __init__(
         self,
         graph_pair: str = "imdb-tmdb",
     ):
+        """Initialize a MovieGraphBenchmark dataset.
+
+        :param graph_pair: which graph pair to use of "imdb-tdmb","imdb-tvdb" or "tmdb-tvdb"
+        :raises ValueError: if unknown graph pair
+        """
         # Input validation.
         if graph_pair not in GRAPH_PAIRS:
             raise ValueError(f"Invalid graph pair: Allowed are: {GRAPH_PAIRS}")

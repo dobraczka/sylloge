@@ -44,10 +44,20 @@ class ZipEADataset(EADataset):
         inner_path: pathlib.PurePosixPath,
         file_name_rel_triples_left: str = "rel_triples_1",
         file_name_rel_triples_right: str = "rel_triples_2",
-        file_name_ent_links: str = "ent_links",
         file_name_attr_triples_left: str = "attr_triples_1",
         file_name_attr_triples_right: str = "attr_triples_2",
+        file_name_ent_links: str = "ent_links",
     ):
+        """Initialize ZipEADataset.
+
+        :param zip_path: path to zip archive containing data
+        :param inner_path: base path inside zip archive
+        :param file_name_rel_triples_left: file name of left relation triples
+        :param file_name_rel_triples_right: file name of right relation triples
+        :param file_name_attr_triples_left: file name of left attribute triples
+        :param file_name_attr_triples_right: file name of right attribute triples
+        :param file_name_ent_links: file name gold standard containing all entity links
+        """
         self.zip_path = zip_path
         self.inner_path = inner_path
         self.file_name_rel_triples_left = file_name_rel_triples_left
@@ -116,6 +126,21 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset):
         file_name_train_links: str = "train_links",
         file_name_valid_links: str = "valid_links",
     ):
+        """Initialize ZipEADatasetWithPreSplitFolds.
+
+        :param zip_path: path to zip archive containing data
+        :param inner_path: base path inside zip archive
+        :param file_name_rel_triples_left: file name of left relation triples
+        :param file_name_rel_triples_right: file name of right relation triples
+        :param file_name_attr_triples_left: file name of left attribute triples
+        :param file_name_attr_triples_right: file name of right attribute triples
+        :param file_name_ent_links: file name gold standard containing all entity links
+        :param directory_name_folds: directory name containing folds
+        :param directory_names_individual_folds: directory names of individual folds
+        :param file_name_test_links: name of test links file
+        :param file_name_train_links: name of train links file
+        :param file_name_valid_links: name of valid links file
+        """
         super().__init__(
             zip_path=zip_path,
             inner_path=inner_path,

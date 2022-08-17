@@ -29,6 +29,9 @@ GRAPH_VERSIONS = (V1, V2)
 
 class OpenEA(ZipEADatasetWithPreSplitFolds):
     # reference: http://www.vldb.org/pvldb/vol13/p2326-sun.pdf
+    """Class containing the OpenEA dataset family published in
+    `Sun, Z. et. al. (2020) A Benchmarking Study of Embedding-based Entity Alignment for Knowledge Graphs <http://www.vldb.org/pvldb/vol13/p2326-sun.pdf>`_,
+    *Proceedings of the VLDB Endowment*"""
 
     #: The link to the zip file
     FIGSHARE_LINK: str = "https://figshare.com/ndownloader/files/34234391"
@@ -44,8 +47,14 @@ class OpenEA(ZipEADatasetWithPreSplitFolds):
         graph_pair: str = "D_W",
         size: str = "15K",
         version: str = "V1",
-        load_pre_split_fold: bool = False,
     ):
+        """Initializes an OpenEA dataset.
+
+        :param graph_pair: which pair to use of "D_W", "D_Y", "EN_DE" or "EN_FR"
+        :param size: what size ("15K" or "100K")
+        :param version: which version to use ("V1" or "V2")
+        :raises ValueError: if unknown graph_pair,size or version values are provided
+        """
         # Input validation.
         if graph_pair not in GRAPH_PAIRS:
             raise ValueError(f"Invalid graph pair: Allowed are: {GRAPH_PAIRS}")
@@ -57,7 +66,6 @@ class OpenEA(ZipEADatasetWithPreSplitFolds):
         self.graph_pair = graph_pair
         self.size = size
         self.version = version
-        self.load_pre_split_fold = load_pre_split_fold
 
         # ensure zip file is present
         zip_path = OPEN_EA_MODULE.ensure(
