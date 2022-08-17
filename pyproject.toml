@@ -1,17 +1,17 @@
 [tool.poetry]
-name = "ea-dataset-provider"
+name = "sylloge"
 version = "0.1.0"
 description = "Small library to simplify collecting and loading of entity alignment benchmark datasets"
 authors = ["Daniel Obraczka <obraczka@informatik.uni-leipzig.de>"]
 license = "MIT"
 readme = "README.md"
 keywords = []
-repository = "https://github.com/dobraczka/ea-dataset-provider"
+repository = "https://github.com/dobraczka/sylloge"
 
 [tool.poetry.urls]
-"Bug Tracker" = "https://github.com/dobraczka/ea-dataset-provider/issues"
-"Source" = "https://github.com/dobraczka/ea-dataset-provider"
-"Documentation" = "https://ea-dataset-provider.readthedocs.io"
+"Bug Tracker" = "https://github.com/dobraczka/sylloge/issues"
+"Source" = "https://github.com/dobraczka/sylloge"
+"Documentation" = "https://sylloge.readthedocs.io"
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
@@ -19,7 +19,9 @@ Sphinx = {version = "^5.0.0", optional = true}
 insegel = {version = "^1.3.1", optional = true}
 pystow = "^0.4.6"
 pandas = "^1.1.5"
-moviegraphbenchmark = "^1.0.0"
+moviegraphbenchmark = "^1.0.1"
+sphinx-automodapi = {version = "^0.14.1", optional = true}
+sphinx-autodoc-typehints = {version = "^1.19.2", optional = true}
 
 
 [tool.poetry.dev-dependencies]
@@ -42,7 +44,7 @@ darglint = "^1.8.1"
 
 
 [tool.poetry.extras]
-docs = ["sphinx", "insegel"]
+docs = ["sphinx", "insegel", "sphinx-automodapi", "sphinx-autodoc-typehints"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
