@@ -128,15 +128,15 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset):
         )
         self.folds = []
         for fold in directory_names_individual_folds:
-            fold_folder = os.path.join(directory_name_folds, fold)
+            fold_folder = pathlib.Path(directory_name_folds).joinpath(fold)
             train = self._read_triples(
-                os.path.join(fold_folder, file_name_train_links), is_links=True
+                fold_folder.joinpath(file_name_train_links), is_links=True
             )
             test = self._read_triples(
-                os.path.join(fold_folder, file_name_test_links), is_links=True
+                fold_folder.joinpath(file_name_test_links), is_links=True
             )
             val = self._read_triples(
-                os.path.join(fold_folder, file_name_valid_links), is_links=True
+                fold_folder.joinpath(file_name_valid_links), is_links=True
             )
             self.folds.append(TrainTestValSplit(train=train, test=test, val=val))
 
