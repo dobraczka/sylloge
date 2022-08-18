@@ -7,6 +7,8 @@ import pandas as pd
 import pystow
 from pystow.utils import read_zipfile_csv
 
+from .utils import fix_dataclass_init_docs
+
 # borrowed from pykeen.typing
 Target = Literal["head", "relation", "tail"]
 LABEL_HEAD: Target = "head"
@@ -17,27 +19,44 @@ EA_SIDE_LEFT: EASide = "left"
 EA_SIDE_RIGHT: EASide = "right"
 EA_SIDES: Tuple[EASide, EASide] = (EA_SIDE_LEFT, EA_SIDE_RIGHT)
 
-BASE_DATASET_MODULE = pystow.module("ea-dataset-provider")
+BASE_DATASET_MODULE = pystow.module("sylloge")
 
 
+@fix_dataclass_init_docs
 @dataclass
 class TrainTestValSplit:
+    """Dataclass holding split of gold standard entity links."""
+
+    #: entity links for training
     train: pd.DataFrame
+    #: entity links for testing
     test: pd.DataFrame
+    #: entity links for validation
     val: pd.DataFrame
 
 
+@fix_dataclass_init_docs
 @dataclass
 class EADataset:
+    """Dataclass holding information of the alignment class."""
+
+    #: relation triples of left knowledge graph
     rel_triples_left: pd.DataFrame
+    #: relation triples of right knowledge graph
     rel_triples_right: pd.DataFrame
+    #: attribute triples of left knowledge graph
     attr_triples_left: pd.DataFrame
+    #: attribute triples of right knowledge graph
     attr_triples_right: pd.DataFrame
+    #: gold standard entity links of alignment
     ent_links: pd.DataFrame
+    #: optional pre-split folds of the gold standard
     folds: Optional[Sequence[TrainTestValSplit]] = None
 
 
 class ZipEADataset(EADataset):
+    """Dataset created from zip file which is downloaded."""
+
     def __init__(
         self,
         zip_path: str,
@@ -113,6 +132,8 @@ class ZipEADataset(EADataset):
 
 
 class ZipEADatasetWithPreSplitFolds(ZipEADataset):
+    """Dataset with pre-split folds created from zip file which is downloaded."""
+
     def __init__(
         self,
         zip_path: str,

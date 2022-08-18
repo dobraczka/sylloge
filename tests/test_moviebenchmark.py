@@ -3,12 +3,8 @@ from typing import Dict
 import pytest
 from util import DatasetStatistics
 
-from ea_dataset_provider import MovieGraphBenchmark
-from ea_dataset_provider.moviegraph_benchmark_loader import (
-    IMDB_TMDB,
-    IMDB_TVDB,
-    TMDB_TVDB,
-)
+from sylloge import MovieGraphBenchmark
+from sylloge.moviegraph_benchmark_loader import IMDB_TMDB, IMDB_TVDB, TMDB_TVDB
 
 statistics_with_params = [
     (

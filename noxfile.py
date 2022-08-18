@@ -11,7 +11,7 @@ def tests(session: Session) -> None:
     session.run("pytest", *args)
 
 
-locations = ["ea_dataset_provider", "tests", "noxfile.py"]
+locations = ["sylloge", "tests", "noxfile.py"]
 
 
 @session()
@@ -52,6 +52,8 @@ def build_docs(session: Session) -> None:
     session.install(".")
     session.install("sphinx")
     session.install("insegel")
+    session.install("sphinx-automodapi")
+    session.install("sphinx-autodoc-typehints")
     session.cd("docs")
     session.run("make", "clean", external=True)
     session.run("make", "html", external=True)

@@ -3,17 +3,8 @@ from typing import Dict
 import pytest
 from util import DatasetStatistics
 
-from ea_dataset_provider import OpenEA
-from ea_dataset_provider.open_ea_loader import (
-    D_W,
-    D_Y,
-    EN_DE,
-    EN_FR,
-    SIZE_15K,
-    SIZE_100K,
-    V1,
-    V2,
-)
+from sylloge import OpenEA
+from sylloge.open_ea_loader import D_W, D_Y, EN_DE, EN_FR, SIZE_15K, SIZE_100K, V1, V2
 
 statistics_with_params = [
     (

@@ -13,8 +13,9 @@
 import os
 import sys
 
-from ea_dataset_provider import __version__
 from sphinx.ext.autodoc import between
+
+from sylloge import __version__
 
 sys.path.insert(0, os.path.abspath("."))
 
@@ -29,7 +30,7 @@ def setup(app):
 
 # -- Project information -----------------------------------------------------
 
-project = 'ea-dataset-provider'
+project = "sylloge"
 copyright = "2022, Daniel Obraczka"
 author = "Daniel Obraczka"
 
@@ -47,18 +48,13 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.coverage",
     "sphinx.ext.intersphinx",
-    "sphinx.ext.napoleon",
+    "sphinx.ext.todo",
     "sphinx.ext.mathjax",
     "sphinx.ext.viewcode",
+    "sphinx_autodoc_typehints",
+    "sphinx_automodapi.automodapi",
 ]
-
-numpydoc_show_class_members = False
-
-# Napoleon settings
-napoleon_include_init_with_doc = False
-
-# autodoc options
-autodoc_default_options = {"members": True, "inherited-members": True}
+automodsumm_inherited_members = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -78,9 +74,10 @@ autosummary_generate = True
 # a list of builtin themes.
 #
 html_theme = "insegel"
+html_theme_options = {"navigation_depth": 2}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
-# html_logo = "logo.png"
+html_logo = "logo.png"

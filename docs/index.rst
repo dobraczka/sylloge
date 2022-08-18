@@ -1,11 +1,11 @@
 Overview
 ========
 
-You can install ea-dataset-provider via pip:
+You can install sylloge via pip:
 
 .. code-block:: bash
   
-  pip install ea_dataset_provider
+  pip install sylloge 
 
 
 .. toctree::
@@ -14,9 +14,7 @@ You can install ea-dataset-provider via pip:
 
 
 .. toctree::
-   :maxdepth: 3
-   :hidden:
+   :maxdepth: 2
    :caption: Documentation
 
-   Installation <source/installation>
-   ea-dataset-provider API <source/apidoc>
+   sylloge API <source/apidoc>

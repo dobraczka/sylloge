@@ -28,16 +28,15 @@ GRAPH_VERSIONS = (V1, V2)
 
 
 class OpenEA(ZipEADatasetWithPreSplitFolds):
-    # reference: http://www.vldb.org/pvldb/vol13/p2326-sun.pdf
-    """Class containing the OpenEA dataset family published in
-    `Sun, Z. et. al. (2020) A Benchmarking Study of Embedding-based Entity Alignment for Knowledge Graphs <http://www.vldb.org/pvldb/vol13/p2326-sun.pdf>`_,
+    """Class containing the OpenEA dataset family.
+    Published in `Sun, Z. et. al. (2020) A Benchmarking Study of Embedding-based Entity Alignment for Knowledge Graphs <http://www.vldb.org/pvldb/vol13/p2326-sun.pdf>`_,
     *Proceedings of the VLDB Endowment*"""
 
     #: The link to the zip file
-    FIGSHARE_LINK: str = "https://figshare.com/ndownloader/files/34234391"
+    _FIGSHARE_LINK: str = "https://figshare.com/ndownloader/files/34234391"
 
     #: The hex digest for the zip file
-    SHA512: str = (
+    _SHA512: str = (
         "c1589f185f86e05c497de147b4d6c243c66775cb4b50c6b41ecc71b36cfafb4c"
         "9f86fbee94e1e78a7ee056dd69df1ce3fc210ae07dc64955ad2bfda7450545ef"
     )
@@ -69,9 +68,9 @@ class OpenEA(ZipEADatasetWithPreSplitFolds):
 
         # ensure zip file is present
         zip_path = OPEN_EA_MODULE.ensure(
-            url=OpenEA.FIGSHARE_LINK,
+            url=OpenEA._FIGSHARE_LINK,
             name="OpenEA_dataset_v2.0.zip",
-            download_kwargs=dict(hexdigests=dict(sha512=OpenEA.SHA512)),
+            download_kwargs=dict(hexdigests=dict(sha512=OpenEA._SHA512)),
         )
 
         # save relative paths beforehand so they are present for loading
