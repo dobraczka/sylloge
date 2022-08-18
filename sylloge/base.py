@@ -56,6 +56,7 @@ class EADataset:
 
 class ZipEADataset(EADataset):
     """Dataset created from zip file which is downloaded."""
+
     def __init__(
         self,
         zip_path: str,
@@ -132,6 +133,7 @@ class ZipEADataset(EADataset):
 
 class ZipEADatasetWithPreSplitFolds(ZipEADataset):
     """Dataset with pre-split folds created from zip file which is downloaded."""
+
     def __init__(
         self,
         zip_path: str,
