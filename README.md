@@ -1,3 +1,7 @@
+<p align="center">
+<img src="https://github.com/dobraczka/sylloge/raw/main/docs/logo.png" alt="sylloge logo", width=200/>
+</p>
+
 <h2 align="center">sylloge</h2>
 
 <p align="center">
