@@ -5,7 +5,7 @@ description = "Small library to simplify collecting and loading of entity alignm
 authors = ["Daniel Obraczka <obraczka@informatik.uni-leipzig.de>"]
 license = "MIT"
 readme = "README.md"
-keywords = []
+keywords = ["entity resolution", "knowledge graph", "datasets", "entity alignment"]
 repository = "https://github.com/dobraczka/sylloge"
 
 [tool.poetry.urls]
