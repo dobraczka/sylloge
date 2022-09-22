@@ -1,6 +1,8 @@
 Overview
 ========
 
+This simple library aims to collect entity-alignment benchmark datasets and make them easily available.
+
 .. code-block:: python
 
     from sylloge import OpenEA
