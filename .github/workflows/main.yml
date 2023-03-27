@@ -30,14 +30,14 @@ jobs:
       run: |
             echo "PYSTOW_HOME=" >> $env:GITHUB_ENV
             echo "PYSTOW_NAME=data" >> $env:GITHUB_ENV
+    - name: Test with nox
+      run: nox -s tests
     - name: Cache dataset downloads
-      uses: actions/cache@v3
+      uses: actions/cache/save@v3
       with:
         path: data
         key: alwaysthesame
         enableCrossOsArchive: True
-    - name: Test with nox
-      run: nox -s tests
 
   other:
     needs: windows
