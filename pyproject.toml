@@ -46,6 +46,9 @@ darglint = "^1.8.1"
 [tool.poetry.extras]
 docs = ["sphinx", "insegel", "sphinx-automodapi", "sphinx-autodoc-typehints"]
 
+[tool.poetry.group.dev.dependencies]
+strawman = "^0.1.2"
+
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
@@ -85,3 +88,7 @@ line_length = 88
 include_trailing_comma = true
 reverse_relative = true
 
+[tool.pytest.ini_options]
+markers = [
+    "slow: mark test as slow"
+]

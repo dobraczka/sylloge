@@ -1602,6 +1602,25 @@ pure-eval = "*"
 tests = ["cython", "littleutils", "pygments", "pytest", "typeguard"]
 
 [[package]]
+name = "strawman"
+version = "0.1.2"
+description = "Library for simple dummy objects"
+category = "dev"
+optional = false
+python-versions = ">=3.8,<4.0"
+files = [
+    {file = "strawman-0.1.2-py3-none-any.whl", hash = "sha256:1ea06d0e062526206513b3a29027e83fa80c5b628608df1d2968081df66ee1b9"},
+    {file = "strawman-0.1.2.tar.gz", hash = "sha256:702b12f1cf5050bbb395da475c7bd1fbfa3367bc29ad3f5f8bfdf31785a84482"},
+]
+
+[package.dependencies]
+numpy = ">=1.17.3,<2.0.0"
+pandas = ">=1.3.0,<2.0.0"
+
+[package.extras]
+docs = ["mkdocs (>=1.4.2,<2.0.0)", "mkdocs-gen-files (>=0.4.0,<0.5.0)", "mkdocs-literate-nav (>=0.6.0,<0.7.0)", "mkdocs-material (>=9.0.9,<10.0.0)", "mkdocs-section-index (>=0.3.5,<0.4.0)", "mkdocstrings[python] (>=0.20.0,<0.21.0)"]
+
+[[package]]
 name = "tomli"
 version = "2.0.1"
 description = "A lil' TOML parser"
@@ -1746,4 +1765,4 @@ docs = ["Sphinx", "insegel", "sphinx-automodapi", "sphinx-autodoc-typehints"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<4.0"
-content-hash = "bb7fbc7d5f2e6a68d5390307ad6eab616ebd019f43460c5a7f5c23d648ec2029"
+content-hash = "b6775d238bd50a9148db5fca4bc8df79ba0668c669b286cf16622ff5dae43de9"

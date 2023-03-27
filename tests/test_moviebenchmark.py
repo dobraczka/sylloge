@@ -1,6 +1,7 @@
 from typing import Dict
 
 import pytest
+from mocks import DataPathMocker, ResourceMocker
 from util import DatasetStatistics
 
 from sylloge import MovieGraphBenchmark
@@ -40,6 +41,7 @@ statistics_with_params = [
 ]
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("params,statistic", statistics_with_params)
 def test_movie_benchmark(params: Dict, statistic: DatasetStatistics):
     ds = MovieGraphBenchmark(**params)
@@ -64,3 +66,26 @@ def test_movie_benchmark(params: Dict, statistic: DatasetStatistics):
             assert len(fold.train) == 496 or len(fold.train) == 497
             assert len(fold.test) == 1738
             assert len(fold.val) == 249 or len(fold.val) == 248
+
+
+@pytest.mark.parametrize("params,statistic", statistics_with_params)
+def test_movie_benchmark_mock(
+    params: Dict, statistic: DatasetStatistics, mocker, tmpdir
+):
+    rm = ResourceMocker(statistic=statistic, fraction=0.1)
+    dp_mocker = DataPathMocker(data_path=tmpdir)
+    mocker.patch("moviegraphbenchmark.loading._read", rm.mock_read)
+    mocker.patch(
+        "moviegraphbenchmark.create_graph._data_path", dp_mocker.mock_data_path
+    )
+    ds = MovieGraphBenchmark(**params)
+    assert ds.rel_triples_left is not None
+    assert ds.rel_triples_right is not None
+    assert ds.attr_triples_left is not None
+    assert ds.attr_triples_right is not None
+    assert ds.ent_links is not None
+    assert ds.folds is not None
+    for fold in ds.folds:
+        assert fold.train is not None
+        assert fold.test is not None
+        assert fold.val is not None
