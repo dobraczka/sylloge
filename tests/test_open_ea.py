@@ -1,6 +1,7 @@
 from typing import Dict
 
 import pytest
+from mocks import ResourceMocker
 from util import DatasetStatistics
 
 from sylloge import OpenEA
@@ -170,6 +171,7 @@ statistics_with_params = [
 ]
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("params,statistic", statistics_with_params)
 def test_open_ea(params: Dict, statistic: DatasetStatistics):
     ds = OpenEA(**params)
@@ -179,6 +181,7 @@ def test_open_ea(params: Dict, statistic: DatasetStatistics):
     assert len(ds.attr_triples_right) == statistic.num_attr_triples_right
     assert len(ds.ent_links) == statistic.num_ent_links
     assert ds.folds is not None
+    assert len(ds.folds) == 5
     for fold in ds.folds:
         if params["size"] == SIZE_15K:
             assert len(fold.train) == 3000
@@ -188,3 +191,23 @@ def test_open_ea(params: Dict, statistic: DatasetStatistics):
             assert len(fold.train) == 20000
             assert len(fold.test) == 70000
             assert len(fold.val) == 10000
+
+
+@pytest.mark.parametrize("params,statistic", statistics_with_params)
+def test_open_ea_mock(params: Dict, statistic: DatasetStatistics, mocker):
+    left_name, right_name = params["graph_pair"].split("_")
+    fraction = 0.01 if params["size"] == SIZE_15K else 0.001
+    rm = ResourceMocker(statistic=statistic, fraction=fraction)
+    mocker.patch("sylloge.base.read_zipfile_csv", rm.mock_read_zipfile_csv)
+    ds = OpenEA(**params)
+    assert ds.rel_triples_left is not None
+    assert ds.rel_triples_right is not None
+    assert ds.attr_triples_left is not None
+    assert ds.attr_triples_right is not None
+    assert ds.ent_links is not None
+    assert ds.folds is not None
+    assert len(ds.folds) == 5
+    for fold in ds.folds:
+        assert fold.train is not None
+        assert fold.test is not None
+        assert fold.val is not None
