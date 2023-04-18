@@ -1,26 +1,20 @@
 import pathlib
+import logging
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import Literal, Optional, Sequence, Tuple, Union
+from typing import Optional, Sequence, Union
 
 import pandas as pd
 import pystow
 from pystow.utils import read_zipfile_csv
 
+from .typing import EA_SIDES, LABEL_HEAD, LABEL_RELATION, LABEL_TAIL
 from .utils import fix_dataclass_init_docs
-
-# borrowed from pykeen.typing
-Target = Literal["head", "relation", "tail"]
-LABEL_HEAD: Target = "head"
-LABEL_RELATION: Target = "relation"
-LABEL_TAIL: Target = "tail"
-EASide = Literal["left", "right"]
-EA_SIDE_LEFT: EASide = "left"
-EA_SIDE_RIGHT: EASide = "right"
-EA_SIDES: Tuple[EASide, EASide] = (EA_SIDE_LEFT, EA_SIDE_RIGHT)
+from .utils import load_from_rdf
 
 BASE_DATASET_MODULE = pystow.module("sylloge")
 
+logger = logging.getLogger(__name__)
 
 @fix_dataclass_init_docs
 @dataclass
@@ -52,6 +46,9 @@ class EADataset:
     ent_links: pd.DataFrame
     #: optional pre-split folds of the gold standard
     folds: Optional[Sequence[TrainTestValSplit]] = None
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(rel_triples_left={len(self.rel_triples_left)}, rel_triples_right={len(self.rel_triples_right)}, attr_triples_left={len(self.attr_triples_left)},attr_triples_right={len(self.attr_triples_right)},ent_links={len(self.ent_links)})"
 
 
 class ZipEADataset(EADataset):
@@ -127,10 +124,6 @@ class ZipEADataset(EADataset):
     def _param_repr(self) -> str:
         raise NotImplementedError
 
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self._param_repr()}rel_triples_left={len(self.rel_triples_left)}, rel_triples_right={len(self.rel_triples_right)}, attr_triples_left={len(self.attr_triples_left)}, attr_triples_right={len(self.attr_triples_right)}, ent_links={len(self.ent_links)})"
-
-
 class ZipEADatasetWithPreSplitFolds(ZipEADataset):
     """Dataset with pre-split folds created from zip file which is downloaded."""
 
@@ -190,3 +183,23 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset):
     def __repr__(self) -> str:
         len_folds = None if not self.folds else len(self.folds)
         return f"{self.__class__.__name__}({self._param_repr()}rel_triples_left={len(self.rel_triples_left)}, rel_triples_right={len(self.rel_triples_right)}, attr_triples_left={len(self.attr_triples_left)}, attr_triples_right={len(self.attr_triples_right)}, ent_links={len(self.ent_links)}, folds={len_folds})"
+
+class RDFBasedEADataset(EADataset):
+    def __init__(self, left_file: str, right_file: str, links_file: str, left_format: str, right_format: str):
+        logger.info("Loading left graph...")
+        left_rel, left_attr = load_from_rdf(left_file, format=left_format)
+        logger.info("Loading right graph...")
+        right_rel, right_attr = load_from_rdf(right_file, format=right_format)
+        ent_links = self._load_entity_links(links_file)
+        super().__init__(
+            rel_triples_left=left_rel,
+            rel_triples_right=right_rel,
+            attr_triples_left=left_attr,
+            attr_triples_right=right_attr,
+            ent_links=ent_links,
+        )
+
+    @abstractmethod
+    def _load_entity_links(self, ref_path: str) -> pd.DataFrame:
+        raise NotImplementedError
+
