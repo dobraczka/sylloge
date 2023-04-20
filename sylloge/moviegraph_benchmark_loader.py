@@ -4,7 +4,7 @@ from moviegraphbenchmark import load_data
 
 from .base import BASE_DATASET_MODULE, EADataset, TrainTestValSplit
 
-MOVIEGRAPH_PATH = BASE_DATASET_MODULE.join("moviegraphbenchmark")
+MOVIEGRAPH_PATH = BASE_DATASET_MODULE.module("moviegraphbenchmark")
 
 # graph pairs
 GraphPair = Literal["imdb-tmdb", "imdb-tvdb", "tmdb-tvdb"]

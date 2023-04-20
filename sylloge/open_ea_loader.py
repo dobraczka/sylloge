@@ -4,7 +4,7 @@ from typing import Literal, Tuple
 
 from .base import BASE_DATASET_MODULE, ZipEADatasetWithPreSplitFolds
 
-OPEN_EA_MODULE = BASE_DATASET_MODULE.submodule("open_ea")
+OPEN_EA_MODULE = BASE_DATASET_MODULE.module("open_ea")
 
 # graph pairs
 GraphPair = Literal["D_W", "D_Y", "EN_DE", "EN_FR"]
