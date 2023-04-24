@@ -53,6 +53,9 @@ class EADataset:
     #: optional pre-split folds of the gold standard
     folds: Optional[Sequence[TrainTestValSplit]] = None
 
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(rel_triples_left={len(self.rel_triples_left)}, rel_triples_right={len(self.rel_triples_right)}, attr_triples_left={len(self.attr_triples_left)}, attr_triples_right={len(self.attr_triples_right)}, ent_links={len(self.ent_links)}, folds={len(self.folds) if self.folds else None})"
+
 
 class ZipEADataset(EADataset):
     """Dataset created from zip file which is downloaded."""
@@ -126,9 +129,6 @@ class ZipEADataset(EADataset):
     @abstractmethod
     def _param_repr(self) -> str:
         raise NotImplementedError
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self._param_repr()}rel_triples_left={len(self.rel_triples_left)}, rel_triples_right={len(self.rel_triples_right)}, attr_triples_left={len(self.attr_triples_left)}, attr_triples_right={len(self.attr_triples_right)}, ent_links={len(self.ent_links)})"
 
 
 class ZipEADatasetWithPreSplitFolds(ZipEADataset):
