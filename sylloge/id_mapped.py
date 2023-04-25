@@ -8,7 +8,7 @@ from .base import EADataset, TrainTestValSplit
 from .utils import fix_dataclass_init_docs
 
 
-def _enhance_mapping(
+def enhance_mapping(
     labels: Iterable, mapping: Mapping[str, int] = None
 ) -> Dict[str, int]:
     """Map labels with given mapping and enhance mapping if unseen labels are encountered.
@@ -30,12 +30,20 @@ def _enhance_mapping(
     return enhanced_mapping
 
 
-def _perform_map(
+def perform_map(
     triples: np.ndarray,
-    head_map: Dict[str, int],
-    rel_map: Dict[str, int],
-    tail_map: Dict[str, int],
+    head_map: Mapping[str, int],
+    rel_map: Mapping[str, int],
+    tail_map: Mapping[str, int],
 ) -> np.ndarray:
+    """Map str triples to int ids via dictionaries.
+
+    :param triples: string triples
+    :param head_map: mapping for head column
+    :param rel_map: mapping for rel column
+    :param tail_map: mapping for tail column
+    :return: integer id mapped triples
+    """
     head_getter = np.vectorize(head_map.get)
     rel_getter = np.vectorize(rel_map.get)
     tail_getter = np.vectorize(tail_map.get)
@@ -47,7 +55,7 @@ def _perform_map(
     return np.concatenate([head_column, rel_column, tail_column], axis=1)
 
 
-def _id_map_rel_triples(
+def id_map_rel_triples(
     df: pd.DataFrame,
     entity_mapping: Dict[str, int] = None,
     rel_mapping: Dict[str, int] = None,
@@ -64,10 +72,10 @@ def _id_map_rel_triples(
     # sorting  ensures consistent results
     entity_labels = sorted(set(heads).union(tails))
     relation_labels = sorted(set(rels))
-    entity_mapping = _enhance_mapping(entity_labels, entity_mapping)
-    rel_mapping = _enhance_mapping(relation_labels, rel_mapping)
+    entity_mapping = enhance_mapping(entity_labels, entity_mapping)
+    rel_mapping = enhance_mapping(relation_labels, rel_mapping)
     return (
-        _perform_map(triples, entity_mapping, rel_mapping, entity_mapping),
+        perform_map(triples, entity_mapping, rel_mapping, entity_mapping),
         entity_mapping,
         rel_mapping,
     )
@@ -93,11 +101,11 @@ def _id_map_attr_triples(
     entity_labels = sorted(set(heads))
     relation_labels = sorted(set(rels))
     attributes = sorted(set(tails))
-    entity_mapping = _enhance_mapping(entity_labels, entity_mapping)
-    rel_mapping = _enhance_mapping(relation_labels, attr_rel_mapping)
-    attr_mapping = _enhance_mapping(attributes, attr_mapping)
+    entity_mapping = enhance_mapping(entity_labels, entity_mapping)
+    rel_mapping = enhance_mapping(relation_labels, attr_rel_mapping)
+    attr_mapping = enhance_mapping(attributes, attr_mapping)
     return (
-        _perform_map(triples, entity_mapping, rel_mapping, attr_mapping),
+        perform_map(triples, entity_mapping, rel_mapping, attr_mapping),
         entity_mapping,
         rel_mapping,
         attr_mapping,
@@ -170,10 +178,10 @@ class IdMappedEADataset:
         ent_links: pd.DataFrame,
         folds: Optional[Sequence[TrainTestValSplit]],
     ) -> "IdMappedEADataset":
-        rel_triples_left, entity_mapping, rel_mapping = _id_map_rel_triples(
+        rel_triples_left, entity_mapping, rel_mapping = id_map_rel_triples(
             rel_triples_left
         )
-        rel_triples_right, entity_mapping, rel_mapping = _id_map_rel_triples(
+        rel_triples_right, entity_mapping, rel_mapping = id_map_rel_triples(
             rel_triples_right,
             entity_mapping=entity_mapping,
             rel_mapping=rel_mapping,
