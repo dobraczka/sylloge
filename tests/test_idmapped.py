@@ -5,7 +5,7 @@ import pytest
 from strawman import dummy_triples
 
 from sylloge.base import EADataset, TrainTestValSplit
-from sylloge.id_mapped import IdMappedEADataset, _enhance_mapping
+from sylloge.id_mapped import IdMappedEADataset, enhance_mapping
 
 
 def _create_simple_mapping(
@@ -125,7 +125,7 @@ def test_enhance_mapping():
     full_range = 12
     given_mapping = {f"e{idx}": idx for idx in range(10)}
     labels = sorted({f"e{idx}" for idx in range(full_range)})
-    enhanced_mapping = _enhance_mapping(labels, given_mapping)
+    enhanced_mapping = enhance_mapping(labels, given_mapping)
     assert enhanced_mapping == {f"e{idx}": idx for idx in range(full_range)}
 
 
