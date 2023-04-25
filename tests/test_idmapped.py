@@ -20,6 +20,7 @@ def _create_simple_mapping(
 
 @pytest.fixture
 def example() -> Tuple[EADataset, Dict[str, int], Dict[str, int], Dict[str, int]]:
+    seed = 42
     left_ent_num = 8
     left_rel_num = 6
     left_attr_rel_num = 7
@@ -39,6 +40,7 @@ def example() -> Tuple[EADataset, Dict[str, int], Dict[str, int], Dict[str, int]
         num_rel=left_rel_num,
         entity_prefix=left_entity_prefix,
         relation_prefix=left_rel_prefix,
+        seed=seed
     )
     right_rel = dummy_triples(
         length=18,
@@ -46,8 +48,8 @@ def example() -> Tuple[EADataset, Dict[str, int], Dict[str, int], Dict[str, int]
         num_rel=right_rel_num,
         entity_prefix=right_entity_prefix,
         relation_prefix=right_rel_prefix,
+        seed=seed
     )
-
     left_attr = dummy_triples(
         length=9,
         num_entities=left_ent_num - 2,
@@ -55,6 +57,7 @@ def example() -> Tuple[EADataset, Dict[str, int], Dict[str, int], Dict[str, int]
         relation_triples=False,
         entity_prefix=left_entity_prefix,
         relation_prefix=left_attr_rel_prefix,
+        seed=seed
     )
     right_attr_len = 14
     right_attr = dummy_triples(
@@ -64,6 +67,7 @@ def example() -> Tuple[EADataset, Dict[str, int], Dict[str, int], Dict[str, int]
         relation_triples=False,
         entity_prefix=right_entity_prefix,
         relation_prefix=right_attr_rel_prefix,
+        seed=seed
     )
     # add numerical attribute value to test non-string attributes
     right_attr.loc[right_attr_len] = [
@@ -71,6 +75,9 @@ def example() -> Tuple[EADataset, Dict[str, int], Dict[str, int], Dict[str, int]
         f"{right_attr_rel_prefix}4",
         123,
     ]
+    # add entity only occuring in tail
+    left_rel.loc[left_rel_num] = [f"{left_entity_prefix}1",f"{left_rel_prefix}1",f"{left_entity_prefix}8"]
+    left_ent_num += 1
     entity_links = pd.DataFrame(
         zip(set(left_rel["head"]), set(right_rel["head"])), columns=["left", "right"]
     )
@@ -148,3 +155,4 @@ def test_idmapped(example):
         _assert_links(unmapped_fold.train, mapped_fold.train, entity_mapping)
         _assert_links(unmapped_fold.test, mapped_fold.test, entity_mapping)
         _assert_links(unmapped_fold.val, mapped_fold.val, entity_mapping)
+

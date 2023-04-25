@@ -165,7 +165,7 @@ class IdMappedEADataset:
         rel_triples_left, entity_mapping, rel_mapping = _id_map_rel_triples(
             dataset.rel_triples_left
         )
-        (rel_triples_right, entity_mapping, rel_mapping,) = _id_map_rel_triples(
+        rel_triples_right, entity_mapping, rel_mapping = _id_map_rel_triples(
             dataset.rel_triples_right,
             entity_mapping=entity_mapping,
             rel_mapping=rel_mapping,
