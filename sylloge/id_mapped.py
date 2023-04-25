@@ -4,7 +4,7 @@ from typing import Dict, Iterable, Mapping, Optional, Sequence, Tuple
 import numpy as np
 import pandas as pd
 
-from .base import EADataset
+from .base import EADataset, TrainTestValSplit
 from .utils import fix_dataclass_init_docs
 
 
@@ -161,12 +161,20 @@ class IdMappedEADataset:
         return f"{self.__class__.__name__}(rel_triples_left={len(self.rel_triples_left)}, rel_triples_right={len(self.rel_triples_right)}, attr_triples_left={len(self.attr_triples_left)}, attr_triples_right={len(self.attr_triples_right)}, ent_links={len(self.ent_links)}, entity_mapping={len(self.entity_mapping)}, rel_mapping={len(self.rel_mapping)}, attr_rel_mapping={len(self.attr_rel_mapping)}, attr_mapping={len(self.attr_mapping)}, folds={len(self.folds) if self.folds else None})"
 
     @classmethod
-    def from_ea_dataset(cls, dataset: EADataset) -> "IdMappedEADataset":
+    def from_frames(
+        cls,
+        rel_triples_left: pd.DataFrame,
+        rel_triples_right: pd.DataFrame,
+        attr_triples_left: pd.DataFrame,
+        attr_triples_right: pd.DataFrame,
+        ent_links: pd.DataFrame,
+        folds: Optional[Sequence[TrainTestValSplit]],
+    ) -> "IdMappedEADataset":
         rel_triples_left, entity_mapping, rel_mapping = _id_map_rel_triples(
-            dataset.rel_triples_left
+            rel_triples_left
         )
         rel_triples_right, entity_mapping, rel_mapping = _id_map_rel_triples(
-            dataset.rel_triples_right,
+            rel_triples_right,
             entity_mapping=entity_mapping,
             rel_mapping=rel_mapping,
         )
@@ -175,26 +183,24 @@ class IdMappedEADataset:
             entity_mapping,
             attr_rel_mapping,
             attr_mapping,
-        ) = _id_map_attr_triples(
-            dataset.attr_triples_left, entity_mapping=entity_mapping
-        )
+        ) = _id_map_attr_triples(attr_triples_left, entity_mapping=entity_mapping)
         (
             attr_triples_right,
             entity_mapping,
             attr_rel_mapping,
             attr_mapping,
         ) = _id_map_attr_triples(
-            dataset.attr_triples_right,
+            attr_triples_right,
             entity_mapping=entity_mapping,
             attr_rel_mapping=attr_rel_mapping,
             attr_mapping=attr_mapping,
         )
 
-        ent_links = _map_links(dataset.ent_links, entity_mapping)
+        ent_links = _map_links(ent_links, entity_mapping)
         new_folds = None
-        if dataset.folds:
+        if folds:
             new_folds = []
-            for fold in dataset.folds:
+            for fold in folds:
                 train = _map_links(fold.train, entity_mapping)
                 test = _map_links(fold.test, entity_mapping)
                 val = _map_links(fold.val, entity_mapping)
@@ -212,4 +218,15 @@ class IdMappedEADataset:
             attr_rel_mapping=attr_rel_mapping,
             attr_mapping=attr_mapping,
             folds=new_folds,
+        )
+
+    @classmethod
+    def from_ea_dataset(cls, dataset: EADataset) -> "IdMappedEADataset":
+        return IdMappedEADataset.from_frames(
+            rel_triples_left=dataset.rel_triples_left,
+            rel_triples_right=dataset.rel_triples_right,
+            attr_triples_left=dataset.attr_triples_left,
+            attr_triples_right=dataset.attr_triples_right,
+            ent_links=dataset.ent_links,
+            folds=dataset.folds,
         )
