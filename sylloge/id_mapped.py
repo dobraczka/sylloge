@@ -22,9 +22,7 @@ def enhance_mapping(
     enhanced_mapping = {**mapping}
     for label in labels:
         label = str(label)
-        if label in mapping:
-            enhanced_mapping[label] = mapping[label]
-        else:
+        if label not in mapping:
             enhanced_mapping[label] = new_id
             new_id += 1
     return enhanced_mapping
