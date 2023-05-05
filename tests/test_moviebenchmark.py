@@ -79,6 +79,7 @@ def test_movie_benchmark_mock(
         "moviegraphbenchmark.create_graph._data_path", dp_mocker.mock_data_path
     )
     ds = MovieGraphBenchmark(**params)
+    assert ds.canonical_name
     assert ds.rel_triples_left is not None
     assert ds.rel_triples_right is not None
     assert ds.attr_triples_left is not None

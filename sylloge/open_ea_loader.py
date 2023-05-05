@@ -80,6 +80,10 @@ class OpenEA(ZipEADatasetWithPreSplitFolds):
         # for file names we can use defaults
         super().__init__(zip_path=zip_path, inner_path=inner_path)
 
+    @property
+    def _canonical_name(self) -> str:
+        return f"{self.__class__.__name__}_{self.graph_pair}_{self.size}_{self.version}"
+
     def _param_repr(self) -> str:
         return (
             f"graph_pair={self.graph_pair}, size={self.size}, version={self.version}, "

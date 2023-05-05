@@ -22,6 +22,7 @@ pandas = "^1.1.5"
 moviegraphbenchmark = "^1.0.1"
 sphinx-automodapi = {version = "^0.14.1", optional = true}
 sphinx-autodoc-typehints = {version = "^1.19.2", optional = true}
+python-slugify = ">=7.0.0"
 
 
 [tool.poetry.dev-dependencies]

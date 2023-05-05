@@ -31,6 +31,13 @@ This simple library aims to collect entity-alignment benchmark datasets and make
     # 3  http://dbpedia.org/resource/E469216  http://www.wikidata.org/entity/Q1471945
     # 4  http://dbpedia.org/resource/E649433  http://www.wikidata.org/entity/Q1198381
 
+You can get a canonical name for a dataset instance to use e.g. to create folders to store experiment results:
+
+.. code-block:: python
+
+   print(ds.canonical_name)
+   # 'openea_d_w_15k_v1'
+
 Create id-mapped dataset for embedding-based methods:
 
 .. code-block:: python

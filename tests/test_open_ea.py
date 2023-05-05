@@ -200,6 +200,7 @@ def test_open_ea_mock(params: Dict, statistic: DatasetStatistics, mocker):
     rm = ResourceMocker(statistic=statistic, fraction=fraction)
     mocker.patch("sylloge.base.read_zipfile_csv", rm.mock_read_zipfile_csv)
     ds = OpenEA(**params)
+    assert ds.canonical_name
     assert ds.rel_triples_left is not None
     assert ds.rel_triples_right is not None
     assert ds.attr_triples_left is not None
