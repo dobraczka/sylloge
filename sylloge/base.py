@@ -6,6 +6,7 @@ from typing import Literal, Optional, Sequence, Tuple, Union
 import pandas as pd
 import pystow
 from pystow.utils import read_zipfile_csv
+from slugify import slugify
 
 from .utils import fix_dataclass_init_docs
 
@@ -52,6 +53,24 @@ class EADataset:
     ent_links: pd.DataFrame
     #: optional pre-split folds of the gold standard
     folds: Optional[Sequence[TrainTestValSplit]] = None
+
+    def _canonical_name(self) -> str:
+        raise NotImplementedError
+
+    @property
+    def canonical_name(self) -> str:
+        """A canonical name for this dataset instance.
+
+        This includes all the necessary information
+        to distinguish this specific dataset as string.
+        This can be used e.g. to create folders with this
+        dataset name to store results.
+
+        :return: concise string representation for this dataset instance
+        """
+        name = self._canonical_name
+        assert isinstance(name, str)  # for mypy
+        return slugify(name, separator="_")
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(rel_triples_left={len(self.rel_triples_left)}, rel_triples_right={len(self.rel_triples_right)}, attr_triples_left={len(self.attr_triples_left)}, attr_triples_right={len(self.attr_triples_right)}, ent_links={len(self.ent_links)}, folds={len(self.folds) if self.folds else None})"

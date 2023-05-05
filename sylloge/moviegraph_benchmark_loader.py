@@ -50,5 +50,9 @@ class MovieGraphBenchmark(EADataset):
             folds=folds,
         )
 
+    @property
+    def _canonical_name(self) -> str:
+        return f"{self.__class__.__name__}_{self.graph_pair}"
+
     def _param_repr(self) -> str:
         return f"graph_pair={self.graph_pair}, "

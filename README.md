@@ -43,6 +43,14 @@ OpenEA(graph_pair=D_W, size=15K, version=V1, rel_triples_left=38265, rel_triples
 3  http://dbpedia.org/resource/E469216  http://www.wikidata.org/entity/Q1471945
 4  http://dbpedia.org/resource/E649433  http://www.wikidata.org/entity/Q1198381
 ```
+
+You can get a canonical name for a dataset instance to use e.g. to create folders to store experiment results:
+
+```
+   >>> ds.canonical_name
+   'openea_d_w_15k_v1'
+```
+
 Create id-mapped dataset for embedding-based methods:
 
 ```
