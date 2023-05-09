@@ -1,5 +1,4 @@
-from pathlib import Path
-from typing import Iterable, Union
+from typing import Iterable
 
 import pandas as pd
 from moviegraphbenchmark.loading import ERData, Fold
