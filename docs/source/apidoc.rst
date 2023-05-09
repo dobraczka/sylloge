@@ -24,3 +24,11 @@ Base
     sylloge.base.ZipEADataset
     sylloge.base.ZipEADatasetWithPreSplitFolds
 
+
+IdMapped
+
+.. autosummary::
+   :nosignatures:
+
+    sylloge.id_mapped.IdMappedTrainTestValSplit
+    sylloge.id_mapped.IdMappedEADataset

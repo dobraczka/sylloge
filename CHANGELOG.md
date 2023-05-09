@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added id mapped dataset class
+- Added canonical name property 
+
 ## [0.1.1] - 2023-03-27
 
 ### Fixed
