@@ -9,7 +9,7 @@ def tests(session: Session) -> None:
     session.install("pytest")
     session.install("pytest-cov")
     session.install("pytest-mock")
-    session.run("pytest", "-m", "not slow", *args)
+    session.run("pytest", *args)
 
 
 locations = ["sylloge", "tests", "noxfile.py"]
