@@ -2,18 +2,11 @@ from pathlib import Path
 from typing import Iterable, Union
 
 import pandas as pd
+from moviegraphbenchmark.loading import ERData, Fold
 from strawman import dummy_df, dummy_triples
 from util import DatasetStatistics
 
 from sylloge.base import EA_SIDE_LEFT, EA_SIDE_RIGHT, EA_SIDES
-
-
-class DataPathMocker:
-    def __init__(self, data_path):
-        self.data_path = data_path
-
-    def mock_data_path(self):
-        return self.data_path
 
 
 class ResourceMocker:
@@ -24,9 +17,28 @@ class ResourceMocker:
     def mock_read(self, path: str, names: Iterable):
         return self.mock_read_zipfile_csv(path="", inner_path=path)
 
-    def mock_read_zipfile_csv(
-        self, path: Union[str, Path], inner_path: str, sep: str = "\t", **kwargs
-    ) -> pd.DataFrame:
+    def mock_load_data(self, pair: str, data_path: str) -> ERData:
+        ent_links = self.mock_read_zipfile_csv("ent_links")
+        train_links = ent_links[:2]
+        test_links = ent_links[2:5]
+        valid_links = ent_links[5:]
+        return ERData(
+            attr_triples_1=self.mock_read_zipfile_csv("attr_triples_1"),
+            attr_triples_2=self.mock_read_zipfile_csv("attr_triples_2"),
+            rel_triples_1=self.mock_read_zipfile_csv("rel_triples_1"),
+            rel_triples_2=self.mock_read_zipfile_csv("rel_triples_2"),
+            ent_links=self.mock_read_zipfile_csv("ent_links"),
+            folds=[
+                Fold(
+                    train_links=train_links,
+                    test_links=test_links,
+                    valid_links=valid_links,
+                )
+                for _ in range(5)
+            ],
+        )
+
+    def mock_read_zipfile_csv(self, inner_path: str, **kwargs) -> pd.DataFrame:
         if "rel_triples_1" in inner_path:
             return dummy_triples(
                 int(self.statistic.num_rel_triples_left * self.fraction),
