@@ -2,7 +2,7 @@
 import pathlib
 from typing import Literal, Tuple
 
-from .base import BASE_DATASET_MODULE, ZipEADatasetWithPreSplitFolds
+from .base import BACKEND_LITERAL, BASE_DATASET_MODULE, ZipEADatasetWithPreSplitFolds
 
 OPEN_EA_MODULE = BASE_DATASET_MODULE.module("open_ea")
 
@@ -46,12 +46,14 @@ class OpenEA(ZipEADatasetWithPreSplitFolds):
         graph_pair: str = "D_W",
         size: str = "15K",
         version: str = "V1",
+        backend: BACKEND_LITERAL = "pandas",
     ):
         """Initializes an OpenEA dataset.
 
         :param graph_pair: which pair to use of "D_W", "D_Y", "EN_DE" or "EN_FR"
         :param size: what size ("15K" or "100K")
         :param version: which version to use ("V1" or "V2")
+        :param backend: Whether to use "pandas" or "dask"
         :raises ValueError: if unknown graph_pair,size or version values are provided
         """
         # Input validation.
@@ -78,13 +80,14 @@ class OpenEA(ZipEADatasetWithPreSplitFolds):
             "OpenEA_dataset_v2.0", f"{graph_pair}_{size}_{version}"
         )
         # for file names we can use defaults
-        super().__init__(zip_path=zip_path, inner_path=inner_path)
+        super().__init__(zip_path=zip_path, inner_path=inner_path, backend=backend)
 
     @property
     def _canonical_name(self) -> str:
         return f"{self.__class__.__name__}_{self.graph_pair}_{self.size}_{self.version}"
 
     def _param_repr(self) -> str:
-        return (
+        super_repr = super()._param_repr()
+        return super_repr + (
             f"graph_pair={self.graph_pair}, size={self.size}, version={self.version}, "
         )

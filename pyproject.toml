@@ -23,6 +23,7 @@ moviegraphbenchmark = "^1.0.1"
 sphinx-automodapi = {version = "^0.14.1", optional = true}
 sphinx-autodoc-typehints = {version = "^1.19.2", optional = true}
 python-slugify = ">=7.0.0"
+dask = {version = ">=2022.01.0", optional = true}
 
 
 [tool.poetry.dev-dependencies]
@@ -46,6 +47,7 @@ darglint = "^1.8.1"
 
 [tool.poetry.extras]
 docs = ["sphinx", "insegel", "sphinx-automodapi", "sphinx-autodoc-typehints"]
+dask = ["dask"]
 
 [tool.poetry.group.dev.dependencies]
 strawman = "^0.1.2"

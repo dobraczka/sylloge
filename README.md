@@ -20,7 +20,7 @@ Load benchmark datasets:
 >>> from sylloge import OpenEA
 >>> ds = OpenEA()
 >>> ds
-OpenEA(graph_pair=D_W, size=15K, version=V1, rel_triples_left=38265, rel_triples_right=42746, attr_triples_left=52134, attr_triples_right=138246, ent_links=15000, folds=5)
+OpenEA(backend=pandas, graph_pair=D_W, size=15K, version=V1, rel_triples_left=38265, rel_triples_right=42746, attr_triples_left=52134, attr_triples_right=138246, ent_links=15000, folds=5)
 >>> ds.rel_triples_right.head()
                                        head                             relation                                    tail
 0   http://www.wikidata.org/entity/Q6176218   http://www.wikidata.org/entity/P27     http://www.wikidata.org/entity/Q145
@@ -68,6 +68,14 @@ IdMappedEADataset(rel_triples_left=38265, rel_triples_right=42746, attr_triples_
  [26040   290 28560]]
 ```
 
+Via `pip install sylloge[dask]` you can use [dask](https://www.dask.org/) as backend for larger datasets:
+```
+>>> 
+>>> ds = OpenEA(backend="dask")
+>>> ds
+OpenEA(backend=dask, graph_pair=D_W, size=15K, version=V1, rel_triples_left=38265, rel_triples_right=42746, attr_triples_left=52134, attr_triples_right=138246, ent_links=15000, folds=5)
+```
+Which replaces pandas DataFrames with dask DataFrames.
 
 Installation
 ============
