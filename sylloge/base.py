@@ -150,7 +150,6 @@ class ZipEADataset(EADataset):
         raise NotImplementedError
 
 
-
 class ZipEADatasetWithPreSplitFolds(ZipEADataset):
     """Dataset with pre-split folds created from zip file which is downloaded."""
 
