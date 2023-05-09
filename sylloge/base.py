@@ -215,6 +215,7 @@ class ZipEADataset(EADataset[pd.DataFrame]):
     def _param_repr(self) -> str:
         return f"backend={self.backend}, "
 
+
 class ZipEADatasetWithPreSplitFolds(ZipEADataset):
     """Dataset with pre-split folds created from zip file which is downloaded."""
 
