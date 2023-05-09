@@ -1,7 +1,6 @@
 import pathlib
-from abc import abstractmethod, ABC
 from dataclasses import dataclass
-from typing import Literal, Optional, Sequence, Tuple, Union, TypeVar, TYPE_CHECKING, Generic, Dict
+from typing import Generic, Literal, Optional, Sequence, Tuple, TypeVar, Union
 
 import pandas as pd
 import pystow
@@ -23,6 +22,7 @@ EA_SIDES: Tuple[EASide, EASide] = (EA_SIDE_LEFT, EA_SIDE_RIGHT)
 BASE_DATASET_MODULE = pystow.module("sylloge")
 
 T = TypeVar("T")
+
 
 @fix_dataclass_init_docs
 @dataclass
@@ -73,14 +73,13 @@ class EADataset(Generic[T]):
         assert isinstance(name, str)  # for mypy
         return slugify(name, separator="_")
 
-    @abstractmethod
     def _param_repr(self) -> str:
         raise NotImplementedError
 
     @property
     def _statistics(self) -> str:
         if hasattr(self.rel_triples_left, "__len__"):
-            return f"rel_triples_left={len(self.rel_triples_left)}, rel_triples_right={len(self.rel_triples_right)}, attr_triples_left={len(self.attr_triples_left)}, attr_triples_right={len(self.attr_triples_right)}, ent_links={len(self.ent_links)}, folds={len(self.folds) if self.folds else None}" # type: ignore
+            return f"rel_triples_left={len(self.rel_triples_left)}, rel_triples_right={len(self.rel_triples_right)}, attr_triples_left={len(self.attr_triples_left)}, attr_triples_right={len(self.attr_triples_right)}, ent_links={len(self.ent_links)}, folds={len(self.folds) if self.folds else None}"  # type: ignore
         else:
             unknown = "unknown_len"
             return f"rel_triples_left={unknown}, rel_triples_right={unknown}, attr_triples_left={unknown}, attr_triples_right={unknown}, ent_links={unknown}, folds={unknown if self.folds else None}"
@@ -157,7 +156,6 @@ class ZipEADataset(EADataset[pd.DataFrame]):
             encoding="utf8",
             dtype=str,
         )
-
 
 
 class ZipEADatasetWithPreSplitFolds(ZipEADataset):
