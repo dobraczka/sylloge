@@ -199,7 +199,7 @@ def test_open_ea(params: Dict, statistic: DatasetStatistics):
 @pytest.mark.parametrize("backend", ["pandas", "dask"])
 def test_open_ea_mock(params: Dict, statistic: DatasetStatistics, backend, mocker):
     left_name, right_name = params["graph_pair"].split("_")
-    fraction = 0.01 if params["size"] == SIZE_15K else 0.001
+    fraction = 0.001 if params["size"] == SIZE_15K else 0.0001
     rm = ResourceMocker(statistic=statistic, fraction=fraction)
     mocker.patch("sylloge.base.read_zipfile_csv", rm.mock_read_zipfile_csv)
     mocker.patch(
