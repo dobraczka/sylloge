@@ -56,7 +56,7 @@ def type_checking(session: Session) -> None:
 
 @session()
 def build_docs(session: Session) -> None:
-    session.install(".")
+    session.install(".[dask, docs]")
     session.install("sphinx")
     session.install("insegel")
     session.install("sphinx-automodapi")
