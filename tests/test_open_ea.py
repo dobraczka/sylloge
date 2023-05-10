@@ -1,5 +1,7 @@
 from typing import Dict
 
+import dask.dataframe as dd
+import pandas as pd
 import pytest
 from mocks import ResourceMocker
 from util import DatasetStatistics
@@ -194,12 +196,17 @@ def test_open_ea(params: Dict, statistic: DatasetStatistics):
 
 
 @pytest.mark.parametrize("params,statistic", statistics_with_params)
-def test_open_ea_mock(params: Dict, statistic: DatasetStatistics, mocker):
+@pytest.mark.parametrize("backend", ["pandas", "dask"])
+def test_open_ea_mock(params: Dict, statistic: DatasetStatistics, backend, mocker):
     left_name, right_name = params["graph_pair"].split("_")
-    fraction = 0.01 if params["size"] == SIZE_15K else 0.001
+    fraction = 0.001 if params["size"] == SIZE_15K else 0.0001
     rm = ResourceMocker(statistic=statistic, fraction=fraction)
     mocker.patch("sylloge.base.read_zipfile_csv", rm.mock_read_zipfile_csv)
-    ds = OpenEA(**params)
+    mocker.patch(
+        "sylloge.base.read_dask_df_archive_csv", rm.mock_read_dask_df_archive_csv
+    )
+    ds = OpenEA(backend=backend, **params)
+    assert ds.canonical_name
     assert ds.rel_triples_left is not None
     assert ds.rel_triples_right is not None
     assert ds.attr_triples_left is not None
@@ -211,3 +218,8 @@ def test_open_ea_mock(params: Dict, statistic: DatasetStatistics, mocker):
         assert fold.train is not None
         assert fold.test is not None
         assert fold.val is not None
+
+    if backend == "pandas":
+        assert isinstance(ds.rel_triples_left, pd.DataFrame)
+    else:
+        assert isinstance(ds.rel_triples_left, dd.DataFrame)

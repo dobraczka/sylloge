@@ -1,7 +1,7 @@
 from typing import Dict
 
 import pytest
-from mocks import DataPathMocker, ResourceMocker
+from mocks import ResourceMocker
 from util import DatasetStatistics
 
 from sylloge import MovieGraphBenchmark
@@ -73,12 +73,9 @@ def test_movie_benchmark_mock(
     params: Dict, statistic: DatasetStatistics, mocker, tmpdir
 ):
     rm = ResourceMocker(statistic=statistic, fraction=0.1)
-    dp_mocker = DataPathMocker(data_path=tmpdir)
-    mocker.patch("moviegraphbenchmark.loading._read", rm.mock_read)
-    mocker.patch(
-        "moviegraphbenchmark.create_graph._data_path", dp_mocker.mock_data_path
-    )
+    mocker.patch("sylloge.moviegraph_benchmark_loader.load_data", rm.mock_load_data)
     ds = MovieGraphBenchmark(**params)
+    assert ds.canonical_name
     assert ds.rel_triples_left is not None
     assert ds.rel_triples_right is not None
     assert ds.attr_triples_left is not None

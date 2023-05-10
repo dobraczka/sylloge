@@ -4,7 +4,7 @@ from nox_poetry import Session, session
 @session()
 def tests(session: Session) -> None:
     args = session.posargs or ["--cov", "--cov-report=xml"]
-    session.install(".[all]")
+    session.install(".[dask]")
     session.install("strawman")
     session.install("pytest")
     session.install("pytest-cov")
@@ -45,12 +45,18 @@ def style_checking(session: Session) -> None:
 def type_checking(session: Session) -> None:
     args = session.posargs or locations
     session.run_always("poetry", "install", external=True)
-    session.run("mypy", "--install-types", "--ignore-missing-imports", *args)
+    session.run(
+        "mypy",
+        "--install-types",
+        "--ignore-missing-imports",
+        "--non-interactive",
+        *args,
+    )
 
 
 @session()
 def build_docs(session: Session) -> None:
-    session.install(".")
+    session.install(".[dask, docs]")
     session.install("sphinx")
     session.install("insegel")
     session.install("sphinx-automodapi")

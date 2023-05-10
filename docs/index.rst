@@ -31,6 +31,41 @@ This simple library aims to collect entity-alignment benchmark datasets and make
     # 3  http://dbpedia.org/resource/E469216  http://www.wikidata.org/entity/Q1471945
     # 4  http://dbpedia.org/resource/E649433  http://www.wikidata.org/entity/Q1198381
 
+You can get a canonical name for a dataset instance to use e.g. to create folders to store experiment results:
+
+.. code-block:: python
+
+   print(ds.canonical_name)
+   # 'openea_d_w_15k_v1'
+
+Create id-mapped dataset for embedding-based methods:
+
+.. code-block:: python
+
+    from sylloge import IdMappedEADataset
+    id_mapped_ds = IdMappedEADataset.from_ea_dataset(ds)
+    print(id_mapped_ds)
+    # IdMappedEADataset(rel_triples_left=38265, rel_triples_right=42746, attr_triples_left=52134, attr_triples_right=138246, ent_links=15000, entity_mapping=30000, rel_mapping=417, attr_rel_mapping=990, attr_mapping=138836, folds=5)
+    print(id_mapped_ds.rel_triples_right)
+    # [[26048   330 16880]
+    #  [19094   293 23348]
+    #  [16554   407 29192]
+    #  ...
+    #  [16480   330 15109]
+    #  [18465   254 19956]
+    #  [26040   290 28560]]
+
+
+Via :code:`pip install sylloge[dask]` you can use `dask <https://www.dask.org/>`_ as backend for larger datasets:
+
+.. code-block:: python
+
+    ds = OpenEA(backend="dask")
+    print(ds)
+    # OpenEA(backend=dask, graph_pair=D_W, size=15K, version=V1, rel_triples_left=38265, rel_triples_right=42746, attr_triples_left=52134, attr_triples_right=138246, ent_links=15000, folds=5)
+
+Which replaces pandas DataFrames with dask DataFrames.
+
 
 You can install sylloge via pip:
 
