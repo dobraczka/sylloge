@@ -205,6 +205,11 @@ class OAEI(EADataset):
         )
         left_attr, left_rel = self._read_triples(archive_path, left=True)
         right_attr, right_rel = self._read_triples(archive_path, left=False)
+
+        # need to set before initialization
+        # because of possible transforming
+        self.property_links = property_mapping_df
+        self.class_links = class_mapping_df
         super().__init__(
             rel_triples_left=left_rel,
             rel_triples_right=right_rel,
@@ -213,10 +218,6 @@ class OAEI(EADataset):
             ent_links=entity_mapping_df,
             backend=backend,
         )
-        self.property_links = property_mapping_df
-        self.class_links = class_mapping_df
-        if self.backend == "pandas":
-            self.compute_dask()
 
     @property
     def _canonical_name(self) -> str:
@@ -226,10 +227,21 @@ class OAEI(EADataset):
     def _param_repr(self) -> str:
         return f"task={self.task}, "
 
-    def compute_dask(self):
-        self.property_links = self.property_links.compute()
-        self.class_links = self.class_links.compute()
-        super().compute_dask()
+    def _additional_backend_handling(self, backend: BACKEND_LITERAL):
+        if backend == "pandas":
+            self._backend = "pandas"
+            if isinstance(self.rel_triples_left, pd.DataFrame):
+                return
+            else:
+                self.property_links = self.property_links.compute()
+                self.class_links = self.class_links.compute()
+        elif backend == "dask":
+            self._backend = "dask"
+            if isinstance(self.rel_triples_left, dd.DataFrame):
+                return
+            else:
+                self.property_links = dd.from_pandas(self.property_links)
+                self.class_links = dd.from_pandas(self.class_links)
 
     @property
     def _statistics(self) -> str:
