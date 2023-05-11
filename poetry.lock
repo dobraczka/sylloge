@@ -1800,7 +1800,7 @@ tests = ["cython", "littleutils", "pygments", "pytest", "typeguard"]
 name = "strawman"
 version = "0.1.2"
 description = "Library for simple dummy objects"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.8,<4.0"
 files = []
@@ -2001,4 +2001,4 @@ docs = ["Sphinx", "insegel", "sphinx-automodapi", "sphinx-autodoc-typehints"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<4.0"
-content-hash = "f5cbdca30c1d6457fb55f5e2151809ed811bc45c8f5687868e0d8f6f19477f88"
+content-hash = "ae15a4d5b13cee999bfeed8c7583c86b007738ceb74143925e3ee1df8096ee62"

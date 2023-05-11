@@ -24,6 +24,7 @@ sphinx-automodapi = {version = "^0.14.1", optional = true}
 sphinx-autodoc-typehints = {version = "^1.19.2", optional = true}
 python-slugify = ">=7.0.0"
 dask = ">=2022.01.0"
+strawman = {git = "https://github.com/dobraczka/strawman.git", rev = "main"}
 
 
 [tool.poetry.group.dev.dependencies]
@@ -43,7 +44,6 @@ pytest-mock = "^3.7.0"
 pydocstyle = "^6.1.1"
 flake8-bugbear = "^22.7.1"
 darglint = "^1.8.1"
-strawman = {git = "https://github.com/dobraczka/strawman.git", rev = "main"}
 
 
 [tool.poetry.extras]
