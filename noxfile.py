@@ -1,14 +1,30 @@
+import tempfile
 from nox_poetry import Session, session
+
+def install_poetry_groups(session, *groups: str) -> None:
+    """Install dependencies from poetry groups.
+
+    Using this as s workaround until my PR is merged in:
+    https://github.com/cjolowicz/nox-poetry/pull/1080
+    """
+    with tempfile.NamedTemporaryFile() as requirements:
+        session.run(
+            "poetry",
+            "export",
+            *[f"--only={group}" for group in groups],
+            "--format=requirements.txt",
+            "--without-hashes",
+            f"--output={requirements.name}",
+            external=True,
+        )
+        session.install("-r", requirements.name)
 
 
 @session()
 def tests(session: Session) -> None:
     args = session.posargs or ["--cov", "--cov-report=xml"]
-    session.run_always("poetry", "install", external=True)
-    session.install("strawman")
-    session.install("pytest")
-    session.install("pytest-cov")
-    session.install("pytest-mock")
+    session.install(".")
+    install_poetry_groups(session, "dev")
     session.run("pytest", *args)
 
 
