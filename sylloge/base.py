@@ -1,6 +1,5 @@
 import logging
 import pathlib
-from abc import abstractmethod
 from dataclasses import dataclass
 from typing import (
     TYPE_CHECKING,
@@ -13,22 +12,22 @@ from typing import (
     overload,
 )
 
+import dask.dataframe as dd
 import pandas as pd
 import pystow
 from pystow.utils import read_zipfile_csv
 from slugify import slugify
 
 from .dask import read_dask_df_archive_csv
-from .typing import EA_SIDES, LABEL_HEAD, LABEL_RELATION, LABEL_TAIL
-from .utils import fix_dataclass_init_docs, load_from_rdf
+from .typing import BACKEND_LITERAL, COLUMNS, EA_SIDES
+from .utils import fix_dataclass_init_docs
 
 BASE_DATASET_KEY = "sylloge"
 
 BASE_DATASET_MODULE = pystow.module(BASE_DATASET_KEY)
 
-T = TypeVar("T")
+DataFrameType = TypeVar("DataFrameType", pd.DataFrame, dd.DataFrame)
 
-BACKEND_LITERAL = Literal["pandas", "dask"]
 
 if TYPE_CHECKING:
     import dask.dataframe as dd
@@ -38,34 +37,36 @@ logger = logging.getLogger(__name__)
 
 @fix_dataclass_init_docs
 @dataclass
-class TrainTestValSplit(Generic[T]):
+class TrainTestValSplit(Generic[DataFrameType]):
     """Dataclass holding split of gold standard entity links."""
 
     #: entity links for training
-    train: T
+    train: DataFrameType
     #: entity links for testing
-    test: T
+    test: DataFrameType
     #: entity links for validation
-    val: T
+    val: DataFrameType
 
 
 @fix_dataclass_init_docs
 @dataclass
-class EADataset(Generic[T]):
+class EADataset(Generic[DataFrameType]):
     """Dataclass holding information of the alignment class."""
 
     #: relation triples of left knowledge graph
-    rel_triples_left: T
+    rel_triples_left: DataFrameType
     #: relation triples of right knowledge graph
-    rel_triples_right: T
+    rel_triples_right: DataFrameType
     #: attribute triples of left knowledge graph
-    attr_triples_left: T
+    attr_triples_left: DataFrameType
     #: attribute triples of right knowledge graph
-    attr_triples_right: T
+    attr_triples_right: DataFrameType
     #: gold standard entity links of alignment
-    ent_links: T
+    ent_links: DataFrameType
     #: optional pre-split folds of the gold standard
-    folds: Optional[Sequence[TrainTestValSplit[T]]] = None
+    folds: Optional[Sequence[TrainTestValSplit[DataFrameType]]] = None
+    #: which backend is used
+    backend: BACKEND_LITERAL = "pandas"
 
     def _canonical_name(self) -> str:
         raise NotImplementedError
@@ -85,19 +86,31 @@ class EADataset(Generic[T]):
         assert isinstance(name, str)  # for mypy
         return slugify(name, separator="_")
 
+    @property
     def _param_repr(self) -> str:
         raise NotImplementedError
 
     @property
     def _statistics(self) -> str:
-        if hasattr(self.rel_triples_left, "__len__"):
+        if isinstance(self.rel_triples_left, pd.DataFrame):
             return f"rel_triples_left={len(self.rel_triples_left)}, rel_triples_right={len(self.rel_triples_right)}, attr_triples_left={len(self.attr_triples_left)}, attr_triples_right={len(self.attr_triples_right)}, ent_links={len(self.ent_links)}, folds={len(self.folds) if self.folds else None}"  # type: ignore
         else:
             unknown = "unknown_len"
             return f"rel_triples_left={unknown}, rel_triples_right={unknown}, attr_triples_left={unknown}, attr_triples_right={unknown}, ent_links={unknown}, folds={unknown if self.folds else None}"
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self._param_repr()}{self._statistics})"
+        return f"{self.__class__.__name__}(backend=self.backend, {self._param_repr}{self._statistics})"
+
+    def compute_dask(self):
+        """Compute dask dataframes and set backend to pandas."""
+        if isinstance(self.rel_triples_left, pd.DataFrame):
+            return
+        self.rel_triples_left = self.rel_triples_left.compute()
+        self.rel_triples_right = self.rel_triples_right.compute()
+        self.attr_triples_left = self.attr_triples_left.compute()
+        self.attr_triples_right = self.attr_triples_right.compute()
+        self.ent_links = self.ent_links.compute()
+        self.backend = "pandas"
 
 
 class ZipEADataset(EADataset[pd.DataFrame]):
@@ -156,6 +169,7 @@ class ZipEADataset(EADataset[pd.DataFrame]):
             attr_triples_left=attr_triples_left,
             attr_triples_right=attr_triples_right,
             ent_links=ent_links,
+            backend=backend,
         )
 
     @overload
@@ -182,9 +196,7 @@ class ZipEADataset(EADataset[pd.DataFrame]):
         backend: BACKEND_LITERAL,
         is_links: bool = False,
     ) -> Union[pd.DataFrame, "dd.DataFrame"]:
-        columns = (
-            list(EA_SIDES) if is_links else (LABEL_HEAD, LABEL_RELATION, LABEL_TAIL)
-        )
+        columns = list(EA_SIDES) if is_links else COLUMNS
         read_csv_kwargs = dict(
             header=None,
             names=columns,
@@ -205,9 +217,6 @@ class ZipEADataset(EADataset[pd.DataFrame]):
                 protocol="zip",
                 **read_csv_kwargs,
             )
-
-    def _param_repr(self) -> str:
-        return f"backend={self.backend}, "
 
 
 class ZipEADatasetWithPreSplitFolds(ZipEADataset):
@@ -274,30 +283,3 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset):
                 backend=self.backend,
             )
             self.folds.append(TrainTestValSplit(train=train, test=test, val=val))
-
-
-class RDFBasedEADataset(EADataset):
-    def __init__(
-        self,
-        left_file: str,
-        right_file: str,
-        links_file: str,
-        left_format: str,
-        right_format: str,
-    ):
-        logger.info("Loading left graph...")
-        left_rel, left_attr = load_from_rdf(left_file, format=left_format)
-        logger.info("Loading right graph...")
-        right_rel, right_attr = load_from_rdf(right_file, format=right_format)
-        ent_links = self._load_entity_links(links_file)
-        super().__init__(
-            rel_triples_left=left_rel,
-            rel_triples_right=right_rel,
-            attr_triples_left=left_attr,
-            attr_triples_right=right_attr,
-            ent_links=ent_links,
-        )
-
-    @abstractmethod
-    def _load_entity_links(self, ref_path: str) -> pd.DataFrame:
-        raise NotImplementedError

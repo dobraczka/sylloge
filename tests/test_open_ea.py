@@ -206,6 +206,7 @@ def test_open_ea_mock(params: Dict, statistic: DatasetStatistics, backend, mocke
         "sylloge.base.read_dask_df_archive_csv", rm.mock_read_dask_df_archive_csv
     )
     ds = OpenEA(backend=backend, **params)
+    assert ds.__repr__() is not None
     assert ds.canonical_name
     assert ds.rel_triples_left is not None
     assert ds.rel_triples_right is not None

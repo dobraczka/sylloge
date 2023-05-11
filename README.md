@@ -68,7 +68,7 @@ IdMappedEADataset(rel_triples_left=38265, rel_triples_right=42746, attr_triples_
  [26040   290 28560]]
 ```
 
-Via `pip install sylloge[dask]` you can use [dask](https://www.dask.org/) as backend for larger datasets:
+You can use [dask](https://www.dask.org/) as backend for larger datasets:
 ```
 >>> 
 >>> ds = OpenEA(backend="dask")
@@ -85,7 +85,8 @@ pip install sylloge
 
 Datasets
 ========
-| Dataset family name | Year | # of Datasets | Sources | Authors | Reference |
-|:--------------------|:----:|:-------------:|:-------:|:--------|:----------|
-| OpenEA | 2020 | 16 | DBpedia, Yago, Wikidata | Zun, S. et. al. | [Paper](http://www.vldb.org/pvldb/vol13/p2326-sun.pdf) |
-| MovieGraphBenchmark | 2022 | 3 | IMDB, TMDB, TheTVDB | Obraczka, D. et. al. | [Paper](http://ceur-ws.org/Vol-2873/paper8.pdf) |
+| Dataset family name | Year | # of Datasets | Sources | References |
+|:--------------------|:----:|:-------------:|:-------:|:----------|
+| [OpenEA](https://sylloge.readthedocs.io/en/latest/source/datasets.html#sylloge.OpenEA) | 2020 | 16 | DBpedia, Yago, Wikidata |  [Paper](http://www.vldb.org/pvldb/vol13/p2326-sun.pdf), [Repo](https://github.com/nju-websoft/OpenEA#dataset-overview) |
+| [MovieGraphBenchmark](https://sylloge.readthedocs.io/en/latest/source/datasets.html#sylloge.MovieGraphBenchmark) | 2022 | 3 | IMDB, TMDB, TheTVDB | [Paper](http://ceur-ws.org/Vol-2873/paper8.pdf), [Repo](https://github.com/ScaDS/MovieGraphBenchmark) |
+| [OAEI](https://sylloge.readthedocs.io/en/latest/source/datasets.html#sylloge.OAEI) | 2022 | 5 | Fandom wikis | [Paper](https://ceur-ws.org/Vol-3324/oaei22_paper0.pdf), [Website](http://oaei.ontologymatching.org/2022/knowledgegraph/index.html) |
