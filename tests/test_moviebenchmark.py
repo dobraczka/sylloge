@@ -75,6 +75,7 @@ def test_movie_benchmark_mock(
     rm = ResourceMocker(statistic=statistic, fraction=0.1)
     mocker.patch("sylloge.moviegraph_benchmark_loader.load_data", rm.mock_load_data)
     ds = MovieGraphBenchmark(**params)
+    assert ds.__repr__() is not None
     assert ds.canonical_name
     assert ds.rel_triples_left is not None
     assert ds.rel_triples_right is not None

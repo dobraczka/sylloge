@@ -43,9 +43,9 @@ class OpenEA(ZipEADatasetWithPreSplitFolds):
 
     def __init__(
         self,
-        graph_pair: str = "D_W",
-        size: str = "15K",
-        version: str = "V1",
+        graph_pair: GraphPair = "D_W",
+        size: GraphSize = "15K",
+        version: GraphVersion = "V1",
         backend: BACKEND_LITERAL = "pandas",
     ):
         """Initializes an OpenEA dataset.
@@ -86,8 +86,8 @@ class OpenEA(ZipEADatasetWithPreSplitFolds):
     def _canonical_name(self) -> str:
         return f"{self.__class__.__name__}_{self.graph_pair}_{self.size}_{self.version}"
 
+    @property
     def _param_repr(self) -> str:
-        super_repr = super()._param_repr()
-        return super_repr + (
+        return (
             f"graph_pair={self.graph_pair}, size={self.size}, version={self.version}, "
         )

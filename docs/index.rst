@@ -56,7 +56,7 @@ Create id-mapped dataset for embedding-based methods:
     #  [26040   290 28560]]
 
 
-Via :code:`pip install sylloge[dask]` you can use `dask <https://www.dask.org/>`_ as backend for larger datasets:
+You can use `dask <https://www.dask.org/>`_ as backend for larger datasets:
 
 .. code-block:: python
 

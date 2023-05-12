@@ -1,3 +1,4 @@
+import logging
 import pathlib
 from dataclasses import dataclass
 from typing import (
@@ -6,72 +7,87 @@ from typing import (
     Literal,
     Optional,
     Sequence,
-    Tuple,
     TypeVar,
     Union,
     overload,
 )
 
+import dask.dataframe as dd
 import pandas as pd
 import pystow
 from pystow.utils import read_zipfile_csv
 from slugify import slugify
 
 from .dask import read_dask_df_archive_csv
+from .typing import BACKEND_LITERAL, COLUMNS, EA_SIDES
 from .utils import fix_dataclass_init_docs
-
-# borrowed from pykeen.typing
-Target = Literal["head", "relation", "tail"]
-LABEL_HEAD: Target = "head"
-LABEL_RELATION: Target = "relation"
-LABEL_TAIL: Target = "tail"
-EASide = Literal["left", "right"]
-EA_SIDE_LEFT: EASide = "left"
-EA_SIDE_RIGHT: EASide = "right"
-EA_SIDES: Tuple[EASide, EASide] = (EA_SIDE_LEFT, EA_SIDE_RIGHT)
 
 BASE_DATASET_KEY = "sylloge"
 
 BASE_DATASET_MODULE = pystow.module(BASE_DATASET_KEY)
 
-T = TypeVar("T")
+DataFrameType = TypeVar("DataFrameType", pd.DataFrame, dd.DataFrame)
 
-BACKEND_LITERAL = Literal["pandas", "dask"]
 
 if TYPE_CHECKING:
     import dask.dataframe as dd
 
+logger = logging.getLogger(__name__)
+
 
 @fix_dataclass_init_docs
 @dataclass
-class TrainTestValSplit(Generic[T]):
+class TrainTestValSplit(Generic[DataFrameType]):
     """Dataclass holding split of gold standard entity links."""
 
     #: entity links for training
-    train: T
+    train: DataFrameType
     #: entity links for testing
-    test: T
+    test: DataFrameType
     #: entity links for validation
-    val: T
+    val: DataFrameType
 
 
 @fix_dataclass_init_docs
-@dataclass
-class EADataset(Generic[T]):
-    """Dataclass holding information of the alignment class."""
+class EADataset(Generic[DataFrameType]):
+    """Dataset class holding information of the alignment class."""
 
-    #: relation triples of left knowledge graph
-    rel_triples_left: T
-    #: relation triples of right knowledge graph
-    rel_triples_right: T
-    #: attribute triples of left knowledge graph
-    attr_triples_left: T
-    #: attribute triples of right knowledge graph
-    attr_triples_right: T
-    #: gold standard entity links of alignment
-    ent_links: T
-    #: optional pre-split folds of the gold standard
-    folds: Optional[Sequence[TrainTestValSplit[T]]] = None
+    rel_triples_left: DataFrameType
+    rel_triples_right: DataFrameType
+    attr_triples_left: DataFrameType
+    attr_triples_right: DataFrameType
+    ent_links: DataFrameType
+    folds: Optional[Sequence[TrainTestValSplit[DataFrameType]]] = None
+
+    def __init__(
+        self,
+        rel_triples_left: DataFrameType,
+        rel_triples_right: DataFrameType,
+        attr_triples_left: DataFrameType,
+        attr_triples_right: DataFrameType,
+        ent_links: DataFrameType,
+        folds: Optional[Sequence[TrainTestValSplit[DataFrameType]]] = None,
+        backend: BACKEND_LITERAL = "pandas",
+    ) -> None:
+        """Create an entity aligment dataclass.
+
+        :param rel_triples_left: relation triples of left knowledge graph
+        :param rel_triples_right: relation triples of right knowledge graph
+        :param attr_triples_left: attribute triples of left knowledge graph
+        :param attr_triples_right: attribute triples of right knowledge graph
+        :param ent_links: gold standard entity links of alignment
+        :param folds: optional pre-split folds of the gold standard
+        :param backend: which backend is used of either 'pandas' or 'dask'
+        """
+        self.rel_triples_left = rel_triples_left
+        self.rel_triples_right = rel_triples_right
+        self.attr_triples_left = attr_triples_left
+        self.attr_triples_right = attr_triples_right
+        self.ent_links = ent_links
+        self.folds = folds
+        self._backend: BACKEND_LITERAL = backend
+        # trigger possible transformation
+        self.backend = backend
 
     def _canonical_name(self) -> str:
         raise NotImplementedError
@@ -91,19 +107,54 @@ class EADataset(Generic[T]):
         assert isinstance(name, str)  # for mypy
         return slugify(name, separator="_")
 
+    @property
     def _param_repr(self) -> str:
         raise NotImplementedError
 
     @property
     def _statistics(self) -> str:
-        if hasattr(self.rel_triples_left, "__len__"):
+        if isinstance(self.rel_triples_left, pd.DataFrame):
             return f"rel_triples_left={len(self.rel_triples_left)}, rel_triples_right={len(self.rel_triples_right)}, attr_triples_left={len(self.attr_triples_left)}, attr_triples_right={len(self.attr_triples_right)}, ent_links={len(self.ent_links)}, folds={len(self.folds) if self.folds else None}"  # type: ignore
         else:
             unknown = "unknown_len"
             return f"rel_triples_left={unknown}, rel_triples_right={unknown}, attr_triples_left={unknown}, attr_triples_right={unknown}, ent_links={unknown}, folds={unknown if self.folds else None}"
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self._param_repr()}{self._statistics})"
+        return f"{self.__class__.__name__}(backend=self.backend, {self._param_repr}{self._statistics})"
+
+    def _additional_backend_handling(self, backend: BACKEND_LITERAL):
+        pass
+
+    @property
+    def backend(self) -> BACKEND_LITERAL:
+        return self._backend
+
+    @backend.setter
+    def backend(self, backend: BACKEND_LITERAL):
+        """Set backend and transform data if needed"""
+        if backend == "pandas":
+            self._backend = "pandas"
+            if isinstance(self.rel_triples_left, pd.DataFrame):
+                return
+            else:
+                self.rel_triples_left = self.rel_triples_left.compute()
+                self.rel_triples_right = self.rel_triples_right.compute()
+                self.attr_triples_left = self.attr_triples_left.compute()
+                self.attr_triples_right = self.attr_triples_right.compute()
+                self.ent_links = self.ent_links.compute()
+        elif backend == "dask":
+            self._backend = "dask"
+            if isinstance(self.rel_triples_left, dd.DataFrame):
+                return
+            else:
+                self.rel_triples_left = dd.from_pandas(self.rel_triples_left)
+                self.rel_triples_right = dd.from_pandas(self.rel_triples_right)
+                self.attr_triples_left = dd.from_pandas(self.attr_triples_left)
+                self.attr_triples_right = dd.from_pandas(self.attr_triples_right)
+                self.ent_links = dd.from_pandas(self.ent_links)
+        else:
+            raise ValueError(f"Unknown backend {backend}")
+        self._additional_backend_handling(backend)
 
 
 class ZipEADataset(EADataset[pd.DataFrame]):
@@ -138,23 +189,22 @@ class ZipEADataset(EADataset[pd.DataFrame]):
         self.file_name_ent_links = file_name_ent_links
         self.file_name_attr_triples_left = file_name_attr_triples_left
         self.file_name_attr_triples_right = file_name_attr_triples_right
-        self.backend = backend
 
         # load data
         rel_triples_left = self._read_triples(
-            file_name=self.file_name_rel_triples_left, backend=self.backend
+            file_name=self.file_name_rel_triples_left, backend=backend
         )
         rel_triples_right = self._read_triples(
-            file_name=self.file_name_rel_triples_right, backend=self.backend
+            file_name=self.file_name_rel_triples_right, backend=backend
         )
         attr_triples_left = self._read_triples(
-            file_name=self.file_name_attr_triples_left, backend=self.backend
+            file_name=self.file_name_attr_triples_left, backend=backend
         )
         attr_triples_right = self._read_triples(
-            file_name=self.file_name_attr_triples_right, backend=self.backend
+            file_name=self.file_name_attr_triples_right, backend=backend
         )
         ent_links = self._read_triples(
-            file_name=self.file_name_ent_links, is_links=True, backend=self.backend
+            file_name=self.file_name_ent_links, is_links=True, backend=backend
         )
         super().__init__(
             rel_triples_left=rel_triples_left,
@@ -162,6 +212,7 @@ class ZipEADataset(EADataset[pd.DataFrame]):
             attr_triples_left=attr_triples_left,
             attr_triples_right=attr_triples_right,
             ent_links=ent_links,
+            backend=backend,
         )
 
     @overload
@@ -188,9 +239,7 @@ class ZipEADataset(EADataset[pd.DataFrame]):
         backend: BACKEND_LITERAL,
         is_links: bool = False,
     ) -> Union[pd.DataFrame, "dd.DataFrame"]:
-        columns = (
-            list(EA_SIDES) if is_links else (LABEL_HEAD, LABEL_RELATION, LABEL_TAIL)
-        )
+        columns = list(EA_SIDES) if is_links else COLUMNS
         read_csv_kwargs = dict(
             header=None,
             names=columns,
@@ -211,9 +260,6 @@ class ZipEADataset(EADataset[pd.DataFrame]):
                 protocol="zip",
                 **read_csv_kwargs,
             )
-
-    def _param_repr(self) -> str:
-        return f"backend={self.backend}, "
 
 
 class ZipEADatasetWithPreSplitFolds(ZipEADataset):
