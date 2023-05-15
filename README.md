@@ -20,7 +20,7 @@ Load benchmark datasets:
 >>> from sylloge import OpenEA
 >>> ds = OpenEA()
 >>> ds
-OpenEA(graph_pair=D_W, size=15K, version=V1, rel_triples_left=38265, rel_triples_right=42746, attr_triples_left=52134, attr_triples_right=138246, ent_links=15000, folds=5)
+OpenEA(backend=pandas, graph_pair=D_W, size=15K, version=V1, rel_triples_left=38265, rel_triples_right=42746, attr_triples_left=52134, attr_triples_right=138246, ent_links=15000, folds=5)
 >>> ds.rel_triples_right.head()
                                        head                             relation                                    tail
 0   http://www.wikidata.org/entity/Q6176218   http://www.wikidata.org/entity/P27     http://www.wikidata.org/entity/Q145
@@ -68,6 +68,14 @@ IdMappedEADataset(rel_triples_left=38265, rel_triples_right=42746, attr_triples_
  [26040   290 28560]]
 ```
 
+You can use [dask](https://www.dask.org/) as backend for larger datasets:
+```
+>>> 
+>>> ds = OpenEA(backend="dask")
+>>> ds
+OpenEA(backend=dask, graph_pair=D_W, size=15K, version=V1, rel_triples_left=38265, rel_triples_right=42746, attr_triples_left=52134, attr_triples_right=138246, ent_links=15000, folds=5)
+```
+Which replaces pandas DataFrames with dask DataFrames.
 
 Installation
 ============
@@ -77,7 +85,8 @@ pip install sylloge
 
 Datasets
 ========
-| Dataset family name | Year | # of Datasets | Sources | Authors | Reference |
-|:--------------------|:----:|:-------------:|:-------:|:--------|:----------|
-| OpenEA | 2020 | 16 | DBpedia, Yago, Wikidata | Zun, S. et. al. | [Paper](http://www.vldb.org/pvldb/vol13/p2326-sun.pdf) |
-| MovieGraphBenchmark | 2022 | 3 | IMDB, TMDB, TheTVDB | Obraczka, D. et. al. | [Paper](http://ceur-ws.org/Vol-2873/paper8.pdf) |
+| Dataset family name | Year | # of Datasets | Sources | References |
+|:--------------------|:----:|:-------------:|:-------:|:----------|
+| [OpenEA](https://sylloge.readthedocs.io/en/latest/source/datasets.html#sylloge.OpenEA) | 2020 | 16 | DBpedia, Yago, Wikidata |  [Paper](http://www.vldb.org/pvldb/vol13/p2326-sun.pdf), [Repo](https://github.com/nju-websoft/OpenEA#dataset-overview) |
+| [MovieGraphBenchmark](https://sylloge.readthedocs.io/en/latest/source/datasets.html#sylloge.MovieGraphBenchmark) | 2022 | 3 | IMDB, TMDB, TheTVDB | [Paper](http://ceur-ws.org/Vol-2873/paper8.pdf), [Repo](https://github.com/ScaDS/MovieGraphBenchmark) |
+| [OAEI](https://sylloge.readthedocs.io/en/latest/source/datasets.html#sylloge.OAEI) | 2022 | 5 | Fandom wikis | [Paper](https://ceur-ws.org/Vol-3324/oaei22_paper0.pdf), [Website](http://oaei.ontologymatching.org/2022/knowledgegraph/index.html) |

@@ -4,7 +4,7 @@ from nox_poetry import Session, session
 @session()
 def tests(session: Session) -> None:
     args = session.posargs or ["--cov", "--cov-report=xml"]
-    session.install(".[all]")
+    session.install(".")
     session.install("strawman")
     session.install("pytest")
     session.install("pytest-cov")
@@ -15,7 +15,7 @@ def tests(session: Session) -> None:
 locations = ["sylloge", "tests", "noxfile.py"]
 
 
-@session()
+@session(tags=["not test", "style"])  # type: ignore
 def lint(session: Session) -> None:
     args = session.posargs or locations
     session.install("black", "isort")
@@ -23,7 +23,7 @@ def lint(session: Session) -> None:
     session.run("isort", *args)
 
 
-@session()
+@session(tags=["not test", "style"])  # type: ignore
 def style_checking(session: Session) -> None:
     args = session.posargs or locations
     session.install(
@@ -41,7 +41,7 @@ def style_checking(session: Session) -> None:
     session.run("pflake8", "--docstring-style", "sphinx", *args)
 
 
-@session()
+@session(tags=["not test", "style"])  # type: ignore
 def type_checking(session: Session) -> None:
     args = session.posargs or locations
     session.run_always("poetry", "install", external=True)
@@ -54,9 +54,9 @@ def type_checking(session: Session) -> None:
     )
 
 
-@session()
+@session(tags=["not test"])  # type: ignore
 def build_docs(session: Session) -> None:
-    session.install(".")
+    session.install(".[docs]")
     session.install("sphinx")
     session.install("insegel")
     session.install("sphinx-automodapi")

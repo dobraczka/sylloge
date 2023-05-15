@@ -11,7 +11,7 @@ Datasets
 
     sylloge.MovieGraphBenchmark
     sylloge.OpenEA
-
+    sylloge.OAEI
 
 
 Base
