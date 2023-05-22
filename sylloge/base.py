@@ -120,7 +120,7 @@ class EADataset(Generic[DataFrameType]):
             return f"rel_triples_left={unknown}, rel_triples_right={unknown}, attr_triples_left={unknown}, attr_triples_right={unknown}, ent_links={unknown}, folds={unknown if self.folds else None}"
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(backend=self.backend, {self._param_repr}{self._statistics})"
+        return f"{self.__class__.__name__}(backend={self.backend}, {self._param_repr}{self._statistics})"
 
     def _additional_backend_handling(self, backend: BACKEND_LITERAL):
         pass
