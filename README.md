@@ -70,7 +70,6 @@ IdMappedEADataset(rel_triples_left=38265, rel_triples_right=42746, attr_triples_
 
 You can use [dask](https://www.dask.org/) as backend for larger datasets:
 ```
->>> 
 >>> ds = OpenEA(backend="dask")
 >>> ds
 OpenEA(backend=dask, graph_pair=D_W, size=15K, version=V1, rel_triples_left=38265, rel_triples_right=42746, attr_triples_left=52134, attr_triples_right=138246, ent_links=15000, folds=5)
