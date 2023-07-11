@@ -180,12 +180,16 @@ class OAEI(EADataset):
     }
 
     def __init__(
-        self, task: OAEI_TASK_NAME = "starwars-swg", backend: BACKEND_LITERAL = "dask"
+        self,
+        task: OAEI_TASK_NAME = "starwars-swg",
+        backend: BACKEND_LITERAL = "dask",
+        npartitions: int = 1,
     ):
         """Initialize a OAEI Knowledge Graph Track task.
 
         :param task: Name of the task. Has to be one of {starwars-swg,starwars-swtor,marvelcinematicuniverse-marvel,memoryalpha-memorybeta, memoryalpha-stexpanded}
         :param backend: Whether to use "pandas" or "dask"
+        :param npartitions: how many partitions to use for each frame, when using dask
         :raises ValueError: if unknown task value is provided
         """
         if task not in typing.get_args(OAEI_TASK_NAME):
@@ -217,6 +221,7 @@ class OAEI(EADataset):
             attr_triples_right=right_attr,
             ent_links=entity_mapping_df,
             backend=backend,
+            npartitions=npartitions,
         )
 
     @property
