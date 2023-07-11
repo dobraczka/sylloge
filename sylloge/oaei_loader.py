@@ -240,8 +240,12 @@ class OAEI(EADataset):
             if isinstance(self.rel_triples_left, dd.DataFrame):
                 return
             else:
-                self.property_links = dd.from_pandas(self.property_links)
-                self.class_links = dd.from_pandas(self.class_links)
+                self.property_links = dd.from_pandas(
+                    self.property_links, npartitions=self.partitions
+                )
+                self.class_links = dd.from_pandas(
+                    self.class_links, npartitions=self.partitions
+                )
 
     @property
     def _statistics(self) -> str:

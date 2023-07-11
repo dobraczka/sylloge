@@ -68,6 +68,7 @@ class EADataset(Generic[DataFrameType]):
         ent_links: DataFrameType,
         folds: Optional[Sequence[TrainTestValSplit[DataFrameType]]] = None,
         backend: BACKEND_LITERAL = "pandas",
+        partitions: int = 1,
     ) -> None:
         """Create an entity aligment dataclass.
 
@@ -78,6 +79,7 @@ class EADataset(Generic[DataFrameType]):
         :param ent_links: gold standard entity links of alignment
         :param folds: optional pre-split folds of the gold standard
         :param backend: which backend is used of either 'pandas' or 'dask'
+        :param partitions: how many partitions to use for each frame, when using dask
         """
         self.rel_triples_left = rel_triples_left
         self.rel_triples_right = rel_triples_right
@@ -85,6 +87,7 @@ class EADataset(Generic[DataFrameType]):
         self.attr_triples_right = attr_triples_right
         self.ent_links = ent_links
         self.folds = folds
+        self.partitions: int = partitions
         self._backend: BACKEND_LITERAL = backend
         # trigger possible transformation
         self.backend = backend
@@ -147,11 +150,21 @@ class EADataset(Generic[DataFrameType]):
             if isinstance(self.rel_triples_left, dd.DataFrame):
                 return
             else:
-                self.rel_triples_left = dd.from_pandas(self.rel_triples_left)
-                self.rel_triples_right = dd.from_pandas(self.rel_triples_right)
-                self.attr_triples_left = dd.from_pandas(self.attr_triples_left)
-                self.attr_triples_right = dd.from_pandas(self.attr_triples_right)
-                self.ent_links = dd.from_pandas(self.ent_links)
+                self.rel_triples_left = dd.from_pandas(
+                    self.rel_triples_left, npartitions=self.partitions
+                )
+                self.rel_triples_right = dd.from_pandas(
+                    self.rel_triples_right, npartitions=self.partitions
+                )
+                self.attr_triples_left = dd.from_pandas(
+                    self.attr_triples_left, npartitions=self.partitions
+                )
+                self.attr_triples_right = dd.from_pandas(
+                    self.attr_triples_right, npartitions=self.partitions
+                )
+                self.ent_links = dd.from_pandas(
+                    self.ent_links, npartitions=self.partitions
+                )
         else:
             raise ValueError(f"Unknown backend {backend}")
         self._additional_backend_handling(backend)
