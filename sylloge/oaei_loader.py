@@ -230,18 +230,28 @@ class OAEI(EADataset):
     def _additional_backend_handling(self, backend: BACKEND_LITERAL):
         if backend == "pandas":
             self._backend = "pandas"
-            if isinstance(self.rel_triples_left, pd.DataFrame):
+            if isinstance(self.property_links, pd.DataFrame):
                 return
             else:
                 self.property_links = self.property_links.compute()
                 self.class_links = self.class_links.compute()
         elif backend == "dask":
             self._backend = "dask"
-            if isinstance(self.rel_triples_left, dd.DataFrame):
-                return
+            if isinstance(self.property_links, dd.DataFrame):
+                if self.property_links.npartitions != self.npartitions:
+                    self.property_links = self.property_links.repartition(
+                        npartitions=self.npartitions
+                    )
+                    self.class_links = self.class_links.repartition(
+                        npartitions=self.npartitions
+                    )
             else:
-                self.property_links = dd.from_pandas(self.property_links)
-                self.class_links = dd.from_pandas(self.class_links)
+                self.property_links = dd.from_pandas(
+                    self.property_links, npartitions=self.npartitions
+                )
+                self.class_links = dd.from_pandas(
+                    self.class_links, npartitions=self.npartitions
+                )
 
     @property
     def _statistics(self) -> str:

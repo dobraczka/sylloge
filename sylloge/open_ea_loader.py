@@ -47,6 +47,7 @@ class OpenEA(ZipEADatasetWithPreSplitFolds):
         size: GraphSize = "15K",
         version: GraphVersion = "V1",
         backend: BACKEND_LITERAL = "pandas",
+        npartitions: int = 1,
     ):
         """Initializes an OpenEA dataset.
 
@@ -54,6 +55,7 @@ class OpenEA(ZipEADatasetWithPreSplitFolds):
         :param size: what size ("15K" or "100K")
         :param version: which version to use ("V1" or "V2")
         :param backend: Whether to use "pandas" or "dask"
+        :param npartitions: how many partitions to use for each frame, when using dask
         :raises ValueError: if unknown graph_pair,size or version values are provided
         """
         # Input validation.
@@ -80,7 +82,12 @@ class OpenEA(ZipEADatasetWithPreSplitFolds):
             "OpenEA_dataset_v2.0", f"{graph_pair}_{size}_{version}"
         )
         # for file names we can use defaults
-        super().__init__(zip_path=zip_path, inner_path=inner_path, backend=backend)
+        super().__init__(
+            zip_path=zip_path,
+            inner_path=inner_path,
+            backend=backend,
+            npartitions=npartitions,
+        )
 
     @property
     def _canonical_name(self) -> str:
