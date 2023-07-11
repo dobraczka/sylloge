@@ -4,11 +4,11 @@ from typing import Dict, Iterable, Mapping, Optional, Sequence, Tuple
 import numpy as np
 import pandas as pd
 
-from .base import EADataset
+from .base import EADataset, TrainTestValSplit
 from .utils import fix_dataclass_init_docs
 
 
-def _enhance_mapping(
+def enhance_mapping(
     labels: Iterable, mapping: Mapping[str, int] = None
 ) -> Dict[str, int]:
     """Map labels with given mapping and enhance mapping if unseen labels are encountered.
@@ -22,20 +22,26 @@ def _enhance_mapping(
     enhanced_mapping = {**mapping}
     for label in labels:
         label = str(label)
-        if label in mapping:
-            enhanced_mapping[label] = mapping[label]
-        else:
+        if label not in mapping:
             enhanced_mapping[label] = new_id
             new_id += 1
     return enhanced_mapping
 
 
-def _perform_map(
+def perform_map(
     triples: np.ndarray,
-    head_map: Dict[str, int],
-    rel_map: Dict[str, int],
-    tail_map: Dict[str, int],
+    head_map: Mapping[str, int],
+    rel_map: Mapping[str, int],
+    tail_map: Mapping[str, int],
 ) -> np.ndarray:
+    """Map str triples to int ids via dictionaries.
+
+    :param triples: string triples
+    :param head_map: mapping for head column
+    :param rel_map: mapping for rel column
+    :param tail_map: mapping for tail column
+    :return: integer id mapped triples
+    """
     head_getter = np.vectorize(head_map.get)
     rel_getter = np.vectorize(rel_map.get)
     tail_getter = np.vectorize(tail_map.get)
@@ -47,7 +53,7 @@ def _perform_map(
     return np.concatenate([head_column, rel_column, tail_column], axis=1)
 
 
-def _id_map_rel_triples(
+def id_map_rel_triples(
     df: pd.DataFrame,
     entity_mapping: Dict[str, int] = None,
     rel_mapping: Dict[str, int] = None,
@@ -64,10 +70,10 @@ def _id_map_rel_triples(
     # sorting  ensures consistent results
     entity_labels = sorted(set(heads).union(tails))
     relation_labels = sorted(set(rels))
-    entity_mapping = _enhance_mapping(entity_labels, entity_mapping)
-    rel_mapping = _enhance_mapping(relation_labels, rel_mapping)
+    entity_mapping = enhance_mapping(entity_labels, entity_mapping)
+    rel_mapping = enhance_mapping(relation_labels, rel_mapping)
     return (
-        _perform_map(triples, entity_mapping, rel_mapping, entity_mapping),
+        perform_map(triples, entity_mapping, rel_mapping, entity_mapping),
         entity_mapping,
         rel_mapping,
     )
@@ -93,11 +99,11 @@ def _id_map_attr_triples(
     entity_labels = sorted(set(heads))
     relation_labels = sorted(set(rels))
     attributes = sorted(set(tails))
-    entity_mapping = _enhance_mapping(entity_labels, entity_mapping)
-    rel_mapping = _enhance_mapping(relation_labels, attr_rel_mapping)
-    attr_mapping = _enhance_mapping(attributes, attr_mapping)
+    entity_mapping = enhance_mapping(entity_labels, entity_mapping)
+    rel_mapping = enhance_mapping(relation_labels, attr_rel_mapping)
+    attr_mapping = enhance_mapping(attributes, attr_mapping)
     return (
-        _perform_map(triples, entity_mapping, rel_mapping, attr_mapping),
+        perform_map(triples, entity_mapping, rel_mapping, attr_mapping),
         entity_mapping,
         rel_mapping,
         attr_mapping,
@@ -161,12 +167,20 @@ class IdMappedEADataset:
         return f"{self.__class__.__name__}(rel_triples_left={len(self.rel_triples_left)}, rel_triples_right={len(self.rel_triples_right)}, attr_triples_left={len(self.attr_triples_left)}, attr_triples_right={len(self.attr_triples_right)}, ent_links={len(self.ent_links)}, entity_mapping={len(self.entity_mapping)}, rel_mapping={len(self.rel_mapping)}, attr_rel_mapping={len(self.attr_rel_mapping)}, attr_mapping={len(self.attr_mapping)}, folds={len(self.folds) if self.folds else None})"
 
     @classmethod
-    def from_ea_dataset(cls, dataset: EADataset) -> "IdMappedEADataset":
-        rel_triples_left, entity_mapping, rel_mapping = _id_map_rel_triples(
-            dataset.rel_triples_left
+    def from_frames(
+        cls,
+        rel_triples_left: pd.DataFrame,
+        rel_triples_right: pd.DataFrame,
+        attr_triples_left: pd.DataFrame,
+        attr_triples_right: pd.DataFrame,
+        ent_links: pd.DataFrame,
+        folds: Optional[Sequence[TrainTestValSplit]],
+    ) -> "IdMappedEADataset":
+        rel_triples_left, entity_mapping, rel_mapping = id_map_rel_triples(
+            rel_triples_left
         )
-        (rel_triples_right, entity_mapping, rel_mapping,) = _id_map_rel_triples(
-            dataset.rel_triples_right,
+        rel_triples_right, entity_mapping, rel_mapping = id_map_rel_triples(
+            rel_triples_right,
             entity_mapping=entity_mapping,
             rel_mapping=rel_mapping,
         )
@@ -175,26 +189,24 @@ class IdMappedEADataset:
             entity_mapping,
             attr_rel_mapping,
             attr_mapping,
-        ) = _id_map_attr_triples(
-            dataset.attr_triples_left, entity_mapping=entity_mapping
-        )
+        ) = _id_map_attr_triples(attr_triples_left, entity_mapping=entity_mapping)
         (
             attr_triples_right,
             entity_mapping,
             attr_rel_mapping,
             attr_mapping,
         ) = _id_map_attr_triples(
-            dataset.attr_triples_right,
+            attr_triples_right,
             entity_mapping=entity_mapping,
             attr_rel_mapping=attr_rel_mapping,
             attr_mapping=attr_mapping,
         )
 
-        ent_links = _map_links(dataset.ent_links, entity_mapping)
+        ent_links = _map_links(ent_links, entity_mapping)
         new_folds = None
-        if dataset.folds:
+        if folds:
             new_folds = []
-            for fold in dataset.folds:
+            for fold in folds:
                 train = _map_links(fold.train, entity_mapping)
                 test = _map_links(fold.test, entity_mapping)
                 val = _map_links(fold.val, entity_mapping)
@@ -212,4 +224,15 @@ class IdMappedEADataset:
             attr_rel_mapping=attr_rel_mapping,
             attr_mapping=attr_mapping,
             folds=new_folds,
+        )
+
+    @classmethod
+    def from_ea_dataset(cls, dataset: EADataset) -> "IdMappedEADataset":
+        return IdMappedEADataset.from_frames(
+            rel_triples_left=dataset.rel_triples_left,
+            rel_triples_right=dataset.rel_triples_right,
+            attr_triples_left=dataset.attr_triples_left,
+            attr_triples_right=dataset.attr_triples_right,
+            ent_links=dataset.ent_links,
+            folds=dataset.folds,
         )

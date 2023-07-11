@@ -5,7 +5,7 @@ import pytest
 from strawman import dummy_triples
 
 from sylloge.base import EADataset, TrainTestValSplit
-from sylloge.id_mapped import IdMappedEADataset, _enhance_mapping
+from sylloge.id_mapped import IdMappedEADataset, enhance_mapping
 
 
 def _create_simple_mapping(
@@ -20,6 +20,7 @@ def _create_simple_mapping(
 
 @pytest.fixture
 def example() -> Tuple[EADataset, Dict[str, int], Dict[str, int], Dict[str, int]]:
+    seed = 42
     left_ent_num = 8
     left_rel_num = 6
     left_attr_rel_num = 7
@@ -39,6 +40,7 @@ def example() -> Tuple[EADataset, Dict[str, int], Dict[str, int], Dict[str, int]
         num_rel=left_rel_num,
         entity_prefix=left_entity_prefix,
         relation_prefix=left_rel_prefix,
+        seed=seed,
     )
     right_rel = dummy_triples(
         length=18,
@@ -46,8 +48,8 @@ def example() -> Tuple[EADataset, Dict[str, int], Dict[str, int], Dict[str, int]
         num_rel=right_rel_num,
         entity_prefix=right_entity_prefix,
         relation_prefix=right_rel_prefix,
+        seed=seed,
     )
-
     left_attr = dummy_triples(
         length=9,
         num_entities=left_ent_num - 2,
@@ -55,6 +57,7 @@ def example() -> Tuple[EADataset, Dict[str, int], Dict[str, int], Dict[str, int]
         relation_triples=False,
         entity_prefix=left_entity_prefix,
         relation_prefix=left_attr_rel_prefix,
+        seed=seed,
     )
     right_attr_len = 14
     right_attr = dummy_triples(
@@ -64,6 +67,7 @@ def example() -> Tuple[EADataset, Dict[str, int], Dict[str, int], Dict[str, int]
         relation_triples=False,
         entity_prefix=right_entity_prefix,
         relation_prefix=right_attr_rel_prefix,
+        seed=seed,
     )
     # add numerical attribute value to test non-string attributes
     right_attr.loc[right_attr_len] = [
@@ -71,6 +75,13 @@ def example() -> Tuple[EADataset, Dict[str, int], Dict[str, int], Dict[str, int]
         f"{right_attr_rel_prefix}4",
         123,
     ]
+    # add entity only occuring in tail
+    left_rel.loc[left_rel_num] = [
+        f"{left_entity_prefix}1",
+        f"{left_rel_prefix}1",
+        f"{left_entity_prefix}8",
+    ]
+    left_ent_num += 1
     entity_links = pd.DataFrame(
         zip(set(left_rel["head"]), set(right_rel["head"])), columns=["left", "right"]
     )
@@ -118,7 +129,7 @@ def test_enhance_mapping():
     full_range = 12
     given_mapping = {f"e{idx}": idx for idx in range(10)}
     labels = sorted({f"e{idx}" for idx in range(full_range)})
-    enhanced_mapping = _enhance_mapping(labels, given_mapping)
+    enhanced_mapping = enhance_mapping(labels, given_mapping)
     assert enhanced_mapping == {f"e{idx}": idx for idx in range(full_range)}
 
 
