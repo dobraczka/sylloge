@@ -68,7 +68,7 @@ class EADataset(Generic[DataFrameType]):
         ent_links: DataFrameType,
         folds: Optional[Sequence[TrainTestValSplit[DataFrameType]]] = None,
         backend: BACKEND_LITERAL = "pandas",
-        partitions: int = 1,
+        npartitions: int = 1,
     ) -> None:
         """Create an entity aligment dataclass.
 
@@ -79,7 +79,7 @@ class EADataset(Generic[DataFrameType]):
         :param ent_links: gold standard entity links of alignment
         :param folds: optional pre-split folds of the gold standard
         :param backend: which backend is used of either 'pandas' or 'dask'
-        :param partitions: how many partitions to use for each frame, when using dask
+        :param npartitions: how many partitions to use for each frame, when using dask
         """
         self.rel_triples_left = rel_triples_left
         self.rel_triples_right = rel_triples_right
@@ -87,7 +87,7 @@ class EADataset(Generic[DataFrameType]):
         self.attr_triples_right = attr_triples_right
         self.ent_links = ent_links
         self.folds = folds
-        self.partitions: int = partitions
+        self.npartitions: int = npartitions
         self._backend: BACKEND_LITERAL = backend
         # trigger possible transformation
         self.backend = backend
@@ -148,22 +148,40 @@ class EADataset(Generic[DataFrameType]):
         elif backend == "dask":
             self._backend = "dask"
             if isinstance(self.rel_triples_left, dd.DataFrame):
-                return
+                if self.rel_triples_left.npartitions != self.npartitions:
+                    self.rel_triples_left = self.rel_triples_left.repartition(
+                        npartitions=self.npartitions
+                    )
+                    self.rel_triples_right = self.rel_triples_right.repartition(
+                        npartitions=self.npartitions
+                    )
+                    self.attr_triples_left = self.attr_triples_left.repartition(
+                        npartitions=self.npartitions
+                    )
+                    self.attr_triples_right = self.attr_triples_right.repartition(
+                        npartitions=self.npartitions
+                    )
+                    self.ent_links = self.ent_links.repartition(
+                        npartitions=self.npartitions
+                    )
+                else:
+                    return
+
             else:
                 self.rel_triples_left = dd.from_pandas(
-                    self.rel_triples_left, npartitions=self.partitions
+                    self.rel_triples_left, npartitions=self.npartitions
                 )
                 self.rel_triples_right = dd.from_pandas(
-                    self.rel_triples_right, npartitions=self.partitions
+                    self.rel_triples_right, npartitions=self.npartitions
                 )
                 self.attr_triples_left = dd.from_pandas(
-                    self.attr_triples_left, npartitions=self.partitions
+                    self.attr_triples_left, npartitions=self.npartitions
                 )
                 self.attr_triples_right = dd.from_pandas(
-                    self.attr_triples_right, npartitions=self.partitions
+                    self.attr_triples_right, npartitions=self.npartitions
                 )
                 self.ent_links = dd.from_pandas(
-                    self.ent_links, npartitions=self.partitions
+                    self.ent_links, npartitions=self.npartitions
                 )
         else:
             raise ValueError(f"Unknown backend {backend}")
@@ -183,6 +201,7 @@ class ZipEADataset(EADataset[pd.DataFrame]):
         file_name_attr_triples_right: str = "attr_triples_2",
         file_name_ent_links: str = "ent_links",
         backend: BACKEND_LITERAL = "pandas",
+        npartitions: int = 1,
     ):
         """Initialize ZipEADataset.
 
@@ -194,6 +213,7 @@ class ZipEADataset(EADataset[pd.DataFrame]):
         :param file_name_attr_triples_right: file name of right attribute triples
         :param file_name_ent_links: file name gold standard containing all entity links
         :param backend: Whether to use "pandas" or "dask"
+        :param npartitions: how many partitions to use for each frame, when using dask
         """
         self.zip_path = zip_path
         self.inner_path = inner_path
@@ -226,6 +246,7 @@ class ZipEADataset(EADataset[pd.DataFrame]):
             attr_triples_right=attr_triples_right,
             ent_links=ent_links,
             backend=backend,
+            npartitions=npartitions,
         )
 
     @overload
@@ -288,6 +309,7 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset):
         file_name_attr_triples_left: str = "attr_triples_1",
         file_name_attr_triples_right: str = "attr_triples_2",
         backend: BACKEND_LITERAL = "pandas",
+        npartitions: int = 1,
         directory_name_folds: str = "721_5fold",
         directory_names_individual_folds: Sequence[str] = ("1", "2", "3", "4", "5"),
         file_name_test_links: str = "test_links",
@@ -303,6 +325,7 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset):
         :param file_name_attr_triples_left: file name of left attribute triples
         :param file_name_attr_triples_right: file name of right attribute triples
         :param backend: Whether to use "pandas" or "dask"
+        :param npartitions: how many partitions to use for each frame, when using dask
         :param file_name_ent_links: file name gold standard containing all entity links
         :param directory_name_folds: directory name containing folds
         :param directory_names_individual_folds: directory names of individual folds
@@ -319,6 +342,7 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset):
             file_name_attr_triples_left=file_name_attr_triples_left,
             file_name_attr_triples_right=file_name_attr_triples_right,
             backend=backend,
+            npartitions=npartitions,
         )
         self.folds = []
         for fold in directory_names_individual_folds:
