@@ -22,7 +22,7 @@ class MovieGraphBenchmark(EADataset):
 
     def __init__(
         self,
-        graph_pair: str = "imdb-tmdb",
+        graph_pair: GraphPair = "imdb-tmdb",
     ):
         """Initialize a MovieGraphBenchmark dataset.
 
@@ -34,7 +34,7 @@ class MovieGraphBenchmark(EADataset):
             raise ValueError(f"Invalid graph pair: Allowed are: {GRAPH_PAIRS}")
 
         self.graph_pair = graph_pair
-        ds = load_data(pair=graph_pair, data_path=str(MOVIEGRAPH_PATH))
+        ds = load_data(pair=graph_pair, data_path=str(MOVIEGRAPH_PATH.base))
         folds = [
             TrainTestValSplit(
                 train=fold.train_links, test=fold.test_links, val=fold.valid_links
@@ -54,5 +54,6 @@ class MovieGraphBenchmark(EADataset):
     def _canonical_name(self) -> str:
         return f"{self.__class__.__name__}_{self.graph_pair}"
 
+    @property
     def _param_repr(self) -> str:
         return f"graph_pair={self.graph_pair}, "

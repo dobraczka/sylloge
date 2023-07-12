@@ -56,6 +56,16 @@ Create id-mapped dataset for embedding-based methods:
     #  [26040   290 28560]]
 
 
+You can use `dask <https://www.dask.org/>`_ as backend for larger datasets:
+
+.. code-block:: python
+
+    ds = OpenEA(backend="dask")
+    print(ds)
+    # OpenEA(backend=dask, graph_pair=D_W, size=15K, version=V1, rel_triples_left=38265, rel_triples_right=42746, attr_triples_left=52134, attr_triples_right=138246, ent_links=15000, folds=5)
+
+Which replaces pandas DataFrames with dask DataFrames.
+
 
 You can install sylloge via pip:
 
