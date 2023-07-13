@@ -37,6 +37,10 @@ class NTReader:
 
     def parse_line(self, line: bytes) -> None:
         line_str = line.decode("utf-8").strip()
+        import ipdb # noqa: autoimport
+        ipdb.set_trace() # BREAKPOINT
+
+
         pre_parse_line_str = line_str
         if self.pre_parse_clean_fn:
             line_str = self.pre_parse_clean_fn(line_str)

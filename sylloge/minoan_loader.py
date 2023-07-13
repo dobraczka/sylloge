@@ -6,7 +6,8 @@ from pystow import Module
 from tqdm import tqdm
 
 from .base import BASE_DATASET_MODULE, EADataset
-from .nt_reader import NTReader
+
+# from .nt_reader import NTReader
 
 MINOAN_MODULE = BASE_DATASET_MODULE.module("minoan")
 
@@ -96,16 +97,137 @@ class Minoan(EADataset):
     def _load_side_dfs(
         self, file_info: DataSetFileInfo
     ) -> Tuple[pd.DataFrame, pd.DataFrame]:
-        parser = NTReader(
-            IdMappedLineCleaner(
-                module=MINOAN_MODULE,
-                url=file_info.url,
-                inner_path=file_info.inner_path_map,
-            ).clean_line
-        )
+        # parser = NTReader(
+        #     IdMappedLineCleaner(
+        #         module=MINOAN_MODULE,
+        #         url=file_info.url,
+        #         inner_path=file_info.inner_path_map,
+        #     ).clean_line
+        # )
         return parser.read_remote_tarfile(
             MINOAN_MODULE, url=file_info.url, inner_path=file_info.inner_path_nt
         )
 
+
 if __name__ == "__main__":
-    ds = Minoan()
+    # ds = Minoan()
+    from string import ascii_letters, digits
+    from urllib.parse import unquote
+
+    from .dask import read_dask_bag_from_archive_text
+
+    path = "/home/dobraczka/.data/sylloge/minoan/dbpedia37.tar.gz"
+
+    def clean_line(line: str) -> Tuple[str, str, str]:
+        s, p, o = line.strip().split(" ", maxsplit=2)
+        return s, p, o.strip()
+
+    def clean_id_map(line: str) -> Tuple[str, str]:
+        iri, idx = line.strip().split("\t")
+        return iri, idx
+
+    def clean_id_map_dbp(line: str) -> Tuple[str, str]:
+        iri, idx = line.strip().split("\t")
+        whitelist = set(digits + ascii_letters + "#_-[]<>:")
+        iri = "".join(filter(lambda x: x in whitelist, unquote(iri)))
+        return iri, idx
+
+    def clean_gt(line: str) -> Tuple[str, str]:
+        left, right = line.strip().split(" ")
+        if "dbp" in right:
+            right = right.lower()
+        return left, right
+
+    # bag = read_dask_bag_from_archive_text(path="/home/dobraczka/.data/sylloge/minoan/dbpedia37.tar.gz",inner_path="dbpedia37EntityIds.nt",protocol="tar")
+
+    # bag3 = read_dask_bag_from_archive_text(path="/home/dobraczka/.data/sylloge/minoan/locah.tar.gz",inner_path="locahNewEntityIds.nt",protocol="tar")
+
+    # print("==DBpedia==")
+    # for line in bag.map(clean_line).take(10):
+    #     print(line)
+
+    # for line in bag2.take(10):
+    #     print(line)
+
+    # print("==locah==")
+    # for line in bag3.map(clean_line).take(10):
+    #     print(line)
+
+    locah_id_df = (
+        read_dask_bag_from_archive_text(
+            path="/home/dobraczka/.data/sylloge/minoan/locah.tar.gz",
+            inner_path="locahNewIds.txt",
+            protocol="tar",
+        )
+        .map(clean_id_map)
+        .to_dataframe(columns=["locah_iri", "locah_id"])
+        .set_index("locah_iri")
+    )
+    dbpedia_id_df = (
+        read_dask_bag_from_archive_text(
+            path="/home/dobraczka/.data/sylloge/minoan/dbpedia37.tar.gz",
+            inner_path="dbpediaIds.txt",
+            protocol="tar",
+        )
+        .map(clean_id_map_dbp)
+        .to_dataframe(columns=["dbpedia_iri", "dbpedia_id"])
+        .set_index("dbpedia_iri")
+    )
+
+    df = (
+        read_dask_bag_from_archive_text(
+            path="/home/dobraczka/.data/sylloge/minoan/D5_GT.tar.gz",
+            inner_path="locahNew_groundTruth.txt",
+            protocol="tar",
+        )
+        .map(clean_gt)
+        .to_dataframe(columns=["locah_iri", "dbpedia_iri"])
+        .set_index("dbpedia_iri")
+        .join(dbpedia_id_df,how="inner")
+        .merge(locah_id_df, left_on="locah_iri", right_index=True, how="inner")
+        .compute()
+    )
+    # base = "/home/dobraczka/Downloads/Datasets/MinoanER/mytestsamples/"
+    # dbpidmap = (
+    #     db.read_text(
+    #         f"{base}dbpediaIds.txt",
+    #     )
+    #     .map(clean_id_map_dbp)
+    #     .to_dataframe(columns=["dbpedia_iri", "dbpedia_id"])
+    #     .compute()
+    # )
+    # dbptriples = (
+    #     db.read_text(
+    #         f"{base}dbpedia37EntityIds.nt",
+    #     )
+    #     .map(clean_line)
+    #     .to_dataframe(columns=["s", "p", "o"])
+    #     .compute()
+    # )
+
+    # locahidmap = pd.read_csv(
+    #     f"{base}locahNewIds.txt",
+    #     header=None,
+    #     sep="\t",
+    #     names=["locah_iri", "locah_id"],
+    # )
+    # locahtriples = (
+    #     db.read_text(
+    #         f"{base}locahNewEntityIds.nt",
+    #     )
+    #     .map(clean_line)
+    #     .to_dataframe(columns=["s", "p", "o"])
+    #     .compute()
+    # )
+
+    # gt = (
+    #     db.read_text(
+    #         f"{base}locahNew_groundTruth.txt",
+    #     )
+    #     .map(clean_gt)
+    #     .to_dataframe(columns=["locah_iri", "dbpedia_iri"])
+    #     .compute()
+    # )
+    import ipdb  # noqa: autoimport
+
+    ipdb.set_trace()  # BREAKPOINT
