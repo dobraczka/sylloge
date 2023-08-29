@@ -31,6 +31,7 @@ def test_oaei_mock(task, backend, mocker):
     assert ds.attr_triples_left is not None
     assert ds.attr_triples_right is not None
     assert ds.ent_links is not None
+    assert ds.dataset_names == tuple(task.split("-"))
 
     if backend == "pandas":
         assert isinstance(ds.rel_triples_left, pd.DataFrame)

@@ -7,6 +7,7 @@ from typing import (
     Literal,
     Optional,
     Sequence,
+    Tuple,
     TypeVar,
     Union,
     overload,
@@ -57,6 +58,7 @@ class EADataset(Generic[DataFrameType]):
     attr_triples_left: DataFrameType
     attr_triples_right: DataFrameType
     ent_links: DataFrameType
+    dataset_names: Tuple[str, str]
     folds: Optional[Sequence[TrainTestValSplit[DataFrameType]]] = None
 
     def __init__(
@@ -66,6 +68,7 @@ class EADataset(Generic[DataFrameType]):
         attr_triples_left: DataFrameType,
         attr_triples_right: DataFrameType,
         ent_links: DataFrameType,
+        dataset_names: Tuple[str, str],
         folds: Optional[Sequence[TrainTestValSplit[DataFrameType]]] = None,
         backend: BACKEND_LITERAL = "pandas",
         npartitions: int = 1,
@@ -76,6 +79,7 @@ class EADataset(Generic[DataFrameType]):
         :param rel_triples_right: relation triples of right knowledge graph
         :param attr_triples_left: attribute triples of left knowledge graph
         :param attr_triples_right: attribute triples of right knowledge graph
+        :param dataset_names: tuple of dataset names
         :param ent_links: gold standard entity links of alignment
         :param folds: optional pre-split folds of the gold standard
         :param backend: which backend is used of either 'pandas' or 'dask'
@@ -86,12 +90,14 @@ class EADataset(Generic[DataFrameType]):
         self.attr_triples_left = attr_triples_left
         self.attr_triples_right = attr_triples_right
         self.ent_links = ent_links
+        self.dataset_names = dataset_names
         self.folds = folds
         self.npartitions: int = npartitions
         self._backend: BACKEND_LITERAL = backend
         # trigger possible transformation
         self.backend = backend
 
+    @property
     def _canonical_name(self) -> str:
         raise NotImplementedError
 
@@ -195,6 +201,7 @@ class ZipEADataset(EADataset[pd.DataFrame]):
         self,
         zip_path: str,
         inner_path: pathlib.PurePosixPath,
+        dataset_names: Tuple[str, str],
         file_name_rel_triples_left: str = "rel_triples_1",
         file_name_rel_triples_right: str = "rel_triples_2",
         file_name_attr_triples_left: str = "attr_triples_1",
@@ -207,6 +214,7 @@ class ZipEADataset(EADataset[pd.DataFrame]):
 
         :param zip_path: path to zip archive containing data
         :param inner_path: base path inside zip archive
+        :param dataset_names: tuple of dataset names
         :param file_name_rel_triples_left: file name of left relation triples
         :param file_name_rel_triples_right: file name of right relation triples
         :param file_name_attr_triples_left: file name of left attribute triples
@@ -244,6 +252,7 @@ class ZipEADataset(EADataset[pd.DataFrame]):
             rel_triples_right=rel_triples_right,
             attr_triples_left=attr_triples_left,
             attr_triples_right=attr_triples_right,
+            dataset_names=dataset_names,
             ent_links=ent_links,
             backend=backend,
             npartitions=npartitions,
@@ -303,6 +312,7 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset):
         self,
         zip_path: str,
         inner_path: pathlib.PurePosixPath,
+        dataset_names: Tuple[str, str],
         file_name_rel_triples_left: str = "rel_triples_1",
         file_name_rel_triples_right: str = "rel_triples_2",
         file_name_ent_links: str = "ent_links",
@@ -320,6 +330,7 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset):
 
         :param zip_path: path to zip archive containing data
         :param inner_path: base path inside zip archive
+        :param dataset_names: tuple of dataset names
         :param file_name_rel_triples_left: file name of left relation triples
         :param file_name_rel_triples_right: file name of right relation triples
         :param file_name_attr_triples_left: file name of left attribute triples
@@ -336,6 +347,7 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset):
         super().__init__(
             zip_path=zip_path,
             inner_path=inner_path,
+            dataset_names=dataset_names,
             file_name_rel_triples_left=file_name_rel_triples_left,
             file_name_rel_triples_right=file_name_rel_triples_right,
             file_name_ent_links=file_name_ent_links,

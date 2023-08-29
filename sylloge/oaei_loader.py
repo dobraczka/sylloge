@@ -214,12 +214,14 @@ class OAEI(EADataset):
         # because of possible transforming
         self.property_links = property_mapping_df
         self.class_links = class_mapping_df
+        left_name, right_name = task.split("-")
         super().__init__(
             rel_triples_left=left_rel,
             rel_triples_right=right_rel,
             attr_triples_left=left_attr,
             attr_triples_right=right_attr,
             ent_links=entity_mapping_df,
+            dataset_names=(left_name, right_name),
             backend=backend,
             npartitions=npartitions,
         )

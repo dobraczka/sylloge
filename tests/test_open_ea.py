@@ -215,6 +215,7 @@ def test_open_ea_mock(params: Dict, statistic: DatasetStatistics, backend, mocke
     assert ds.ent_links is not None
     assert ds.folds is not None
     assert len(ds.folds) == 5
+    assert ds.dataset_names == OpenEA._GRAPH_PAIR_TO_DS_NAMES[params["graph_pair"]]
     for fold in ds.folds:
         assert fold.train is not None
         assert fold.test is not None

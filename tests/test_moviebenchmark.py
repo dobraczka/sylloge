@@ -83,6 +83,12 @@ def test_movie_benchmark_mock(
     assert ds.attr_triples_right is not None
     assert ds.ent_links is not None
     assert ds.folds is not None
+    if ds.graph_pair == IMDB_TMDB:
+        assert ds.dataset_names == ("imdb", "tmdb")
+    elif ds.graph_pair == IMDB_TVDB:
+        assert ds.dataset_names == ("imdb", "tvdb")
+    elif ds.graph_pair == TMDB_TVDB:
+        assert ds.dataset_names == ("tmdb", "tvdb")
     for fold in ds.folds:
         assert fold.train is not None
         assert fold.test is not None
