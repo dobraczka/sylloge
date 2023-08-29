@@ -118,6 +118,7 @@ def example() -> Tuple[EADataset, Dict[str, int], Dict[str, int], Dict[str, int]
             attr_triples_right=right_attr,
             ent_links=entity_links,
             folds=folds,
+            dataset_names=("A", "B"),
         ),
         entity_mapping,
         rel_mapping,

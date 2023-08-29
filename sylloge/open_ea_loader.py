@@ -1,6 +1,6 @@
 # largely adapted from pykeen.datasets.ea.openea
 import pathlib
-from typing import Literal, Tuple
+from typing import Dict, Literal, Tuple
 
 from .base import BACKEND_LITERAL, BASE_DATASET_MODULE, ZipEADatasetWithPreSplitFolds
 
@@ -40,6 +40,13 @@ class OpenEA(ZipEADatasetWithPreSplitFolds):
         "c1589f185f86e05c497de147b4d6c243c66775cb4b50c6b41ecc71b36cfafb4c"
         "9f86fbee94e1e78a7ee056dd69df1ce3fc210ae07dc64955ad2bfda7450545ef"
     )
+
+    _GRAPH_PAIR_TO_DS_NAMES: Dict[GraphPair, Tuple[str, str]] = {
+        "D_W": ("DBpedia", "Wikidata"),
+        "D_Y": ("DBpedia", "YAGO"),
+        "EN_DE": ("DBpedia_EN", "DBpedia_DE"),
+        "EN_FR": ("DBpedia_EN", "DBpedia_FR"),
+    }
 
     def __init__(
         self,
@@ -87,6 +94,7 @@ class OpenEA(ZipEADatasetWithPreSplitFolds):
             inner_path=inner_path,
             backend=backend,
             npartitions=npartitions,
+            dataset_names=OpenEA._GRAPH_PAIR_TO_DS_NAMES[graph_pair],
         )
 
     @property

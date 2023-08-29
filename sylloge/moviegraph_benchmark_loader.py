@@ -41,12 +41,14 @@ class MovieGraphBenchmark(EADataset):
             )
             for fold in ds.folds
         ]
+        left_name, right_name = graph_pair.split("-")
         super().__init__(
             rel_triples_left=ds.rel_triples_1,
             rel_triples_right=ds.rel_triples_2,
             attr_triples_left=ds.attr_triples_1,
             attr_triples_right=ds.attr_triples_2,
             ent_links=ds.ent_links,
+            dataset_names=(left_name, right_name),
             folds=folds,
         )
 
