@@ -25,6 +25,7 @@ sphinx-autodoc-typehints = {version = "^1.19.2", optional = true}
 python-slugify = ">=7.0.0"
 dask = ">=2022.01.0"
 strawman = {git = "https://github.com/dobraczka/strawman.git", rev = "main"}
+pyarrow = "*"
 
 
 [tool.poetry.group.dev.dependencies]

@@ -44,7 +44,7 @@ statistics_with_params = [
 @pytest.mark.slow
 @pytest.mark.parametrize("params,statistic", statistics_with_params)
 def test_movie_benchmark(params: Dict, statistic: DatasetStatistics):
-    ds = MovieGraphBenchmark(**params)
+    ds = MovieGraphBenchmark(**params, use_cache=False)
     assert len(ds.rel_triples_left) == statistic.num_rel_triples_left
     assert len(ds.rel_triples_right) == statistic.num_rel_triples_right
     assert len(ds.attr_triples_left) == statistic.num_attr_triples_left
@@ -70,26 +70,32 @@ def test_movie_benchmark(params: Dict, statistic: DatasetStatistics):
 
 @pytest.mark.parametrize("params,statistic", statistics_with_params)
 def test_movie_benchmark_mock(
-    params: Dict, statistic: DatasetStatistics, mocker, tmpdir
+    params: Dict, statistic: DatasetStatistics, mocker, tmpdir, tmp_path
 ):
     rm = ResourceMocker(statistic=statistic, fraction=0.1)
     mocker.patch("sylloge.moviegraph_benchmark_loader.load_data", rm.mock_load_data)
-    ds = MovieGraphBenchmark(**params)
-    assert ds.__repr__() is not None
-    assert ds.canonical_name
-    assert ds.rel_triples_left is not None
-    assert ds.rel_triples_right is not None
-    assert ds.attr_triples_left is not None
-    assert ds.attr_triples_right is not None
-    assert ds.ent_links is not None
-    assert ds.folds is not None
-    if ds.graph_pair == IMDB_TMDB:
-        assert ds.dataset_names == ("imdb", "tmdb")
-    elif ds.graph_pair == IMDB_TVDB:
-        assert ds.dataset_names == ("imdb", "tvdb")
-    elif ds.graph_pair == TMDB_TVDB:
-        assert ds.dataset_names == ("tmdb", "tvdb")
-    for fold in ds.folds:
-        assert fold.train is not None
-        assert fold.test is not None
-        assert fold.val is not None
+    for (use_cache, cache_exists) in [(False, False), (True, False), (True, True)]:
+        if cache_exists:
+            # ensure this method doesn't get called
+            mocker.patch(
+                "sylloge.moviegraph_benchmark_loader.load_data", rm.assert_not_called
+            )
+        ds = MovieGraphBenchmark(**params, use_cache=use_cache, cache_path=tmp_path)
+        assert ds.__repr__() is not None
+        assert ds.canonical_name
+        assert ds.rel_triples_left is not None
+        assert ds.rel_triples_right is not None
+        assert ds.attr_triples_left is not None
+        assert ds.attr_triples_right is not None
+        assert ds.ent_links is not None
+        assert ds.folds is not None
+        if ds.graph_pair == IMDB_TMDB:
+            assert ds.dataset_names == ("imdb", "tmdb")
+        elif ds.graph_pair == IMDB_TVDB:
+            assert ds.dataset_names == ("imdb", "tvdb")
+        elif ds.graph_pair == TMDB_TVDB:
+            assert ds.dataset_names == ("tmdb", "tvdb")
+        for fold in ds.folds:
+            assert fold.train is not None
+            assert fold.test is not None
+            assert fold.val is not None

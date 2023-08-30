@@ -176,7 +176,7 @@ statistics_with_params = [
 @pytest.mark.slow
 @pytest.mark.parametrize("params,statistic", statistics_with_params)
 def test_open_ea(params: Dict, statistic: DatasetStatistics):
-    ds = OpenEA(**params)
+    ds = OpenEA(**params, use_cache=False)
     assert len(ds.rel_triples_left) == statistic.num_rel_triples_left
     assert len(ds.rel_triples_right) == statistic.num_rel_triples_right
     assert len(ds.attr_triples_left) == statistic.num_attr_triples_left
@@ -197,7 +197,9 @@ def test_open_ea(params: Dict, statistic: DatasetStatistics):
 
 @pytest.mark.parametrize("params,statistic", statistics_with_params)
 @pytest.mark.parametrize("backend", ["pandas", "dask"])
-def test_open_ea_mock(params: Dict, statistic: DatasetStatistics, backend, mocker):
+def test_open_ea_mock(
+    params: Dict, statistic: DatasetStatistics, backend, mocker, tmp_path
+):
     left_name, right_name = params["graph_pair"].split("_")
     fraction = 0.001 if params["size"] == SIZE_15K else 0.0001
     rm = ResourceMocker(statistic=statistic, fraction=fraction)
@@ -205,31 +207,40 @@ def test_open_ea_mock(params: Dict, statistic: DatasetStatistics, backend, mocke
     mocker.patch(
         "sylloge.base.read_dask_df_archive_csv", rm.mock_read_dask_df_archive_csv
     )
-    ds = OpenEA(backend=backend, **params)
-    assert ds.__repr__() is not None
-    assert ds.canonical_name
-    assert ds.rel_triples_left is not None
-    assert ds.rel_triples_right is not None
-    assert ds.attr_triples_left is not None
-    assert ds.attr_triples_right is not None
-    assert ds.ent_links is not None
-    assert ds.folds is not None
-    assert len(ds.folds) == 5
-    assert ds.dataset_names == OpenEA._GRAPH_PAIR_TO_DS_NAMES[params["graph_pair"]]
-    for fold in ds.folds:
-        assert fold.train is not None
-        assert fold.test is not None
-        assert fold.val is not None
+    for (use_cache, cache_exists) in [(False, False), (True, False), (True, True)]:
+        if cache_exists:
+            # ensure these methods don't get called
+            mocker.patch("sylloge.base.read_zipfile_csv", rm.assert_not_called)
+            mocker.patch("sylloge.base.read_dask_df_archive_csv", rm.assert_not_called)
+        ds = OpenEA(backend=backend, use_cache=use_cache, cache_path=tmp_path, **params)
+        assert ds.__repr__() is not None
+        assert ds.canonical_name
+        assert ds.rel_triples_left is not None
+        assert ds.rel_triples_right is not None
+        assert ds.attr_triples_left is not None
+        assert ds.attr_triples_right is not None
+        assert ds.ent_links is not None
+        assert ds.folds is not None
+        assert len(ds.folds) == 5
+        assert ds.dataset_names == OpenEA._GRAPH_PAIR_TO_DS_NAMES[params["graph_pair"]]
+        for fold in ds.folds:
+            assert fold.train is not None
+            assert fold.test is not None
+            assert fold.val is not None
 
-    if backend == "pandas":
-        assert isinstance(ds.rel_triples_left, pd.DataFrame)
-    else:
-        assert isinstance(ds.rel_triples_left, dd.DataFrame)
-        assert ds.rel_triples_left.npartitions == ds.npartitions
-        new_npartitions = 10
-        assert (
-            OpenEA(
-                backend=backend, npartitions=new_npartitions, **params
-            ).rel_triples_left.npartitions
-            == new_npartitions
-        )
+        if backend == "pandas":
+            assert isinstance(ds.rel_triples_left, pd.DataFrame)
+        else:
+            assert isinstance(ds.rel_triples_left, dd.DataFrame)
+            assert ds.rel_triples_left.npartitions == ds.npartitions
+            new_npartitions = 10
+            assert (
+                OpenEA(
+                    backend=backend,
+                    npartitions=new_npartitions,
+                    use_cache=use_cache,
+                    cache_path=tmp_path,
+                    **params,
+                ).rel_triples_left.npartitions
+                == new_npartitions
+            )

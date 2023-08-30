@@ -143,3 +143,6 @@ class ResourceMocker:
         return dd.from_pandas(
             self.mock_read_zipfile_csv(inner_path=inner_path), npartitions=1
         )
+
+    def assert_not_called(self, **kwargs):
+        assert False

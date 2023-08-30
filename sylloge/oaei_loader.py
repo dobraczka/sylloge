@@ -1,13 +1,14 @@
 """OAEI knowledge graph track dataset class."""
 import logging
+import pathlib
 import typing
 from collections import namedtuple
-from typing import Dict, Literal, Tuple
+from typing import Dict, Literal, Optional, Tuple
 
 import dask.dataframe as dd
 import pandas as pd
 
-from .base import BASE_DATASET_MODULE, EADataset
+from .base import BASE_DATASET_MODULE, CacheableEADataset
 from .dask import read_dask_bag_from_archive_text
 from .typing import (
     BACKEND_LITERAL,
@@ -89,7 +90,7 @@ def fault_tolerant_parse_nt(
     return subj, pred, obj, triple_type
 
 
-class OAEI(EADataset):
+class OAEI(CacheableEADataset):
     """The  OAEI (Ontology Alignment Evaluation Initiative) Knowledge Graph Track tasks contain graphs created from fandom wikis.
 
     Five integration tasks are available:
@@ -184,17 +185,37 @@ class OAEI(EADataset):
         task: OAEI_TASK_NAME = "starwars-swg",
         backend: BACKEND_LITERAL = "dask",
         npartitions: int = 1,
+        use_cache: bool = True,
+        cache_path: Optional[pathlib.Path] = None,
     ):
         """Initialize a OAEI Knowledge Graph Track task.
 
         :param task: Name of the task. Has to be one of {starwars-swg,starwars-swtor,marvelcinematicuniverse-marvel,memoryalpha-memorybeta, memoryalpha-stexpanded}
         :param backend: Whether to use "pandas" or "dask"
         :param npartitions: how many partitions to use for each frame, when using dask
+        :param use_cache: whether to use cache or not
+        :param cache_path: Path where cache will be stored/loaded
         :raises ValueError: if unknown task value is provided
         """
         if task not in typing.get_args(OAEI_TASK_NAME):
             raise ValueError(f"Task has to be one of {OAEI_TASK_NAME}, but got{task}")
         self.task = task
+
+        left_name, right_name = task.split("-")
+        inner_cache_path = f"{left_name}_{right_name}"
+        actual_cache_path = self.create_cache_path(
+            OAEI_MODULE, inner_cache_path, cache_path
+        )
+
+        super().__init__(
+            use_cache=use_cache,
+            cache_path=actual_cache_path,
+            dataset_names=(left_name, right_name),
+            backend=backend,
+            npartitions=npartitions,
+        )
+
+    def initial_read(self, backend: BACKEND_LITERAL):
         archive_url, sha512hash = OAEI._TASK_URLS[self.task]
 
         # ensure archive file is present
@@ -214,16 +235,12 @@ class OAEI(EADataset):
         # because of possible transforming
         self.property_links = property_mapping_df
         self.class_links = class_mapping_df
-        left_name, right_name = task.split("-")
-        super().__init__(
+        return dict(
             rel_triples_left=left_rel,
             rel_triples_right=right_rel,
             attr_triples_left=left_attr,
             attr_triples_right=right_attr,
             ent_links=entity_mapping_df,
-            dataset_names=(left_name, right_name),
-            backend=backend,
-            npartitions=npartitions,
         )
 
     @property
