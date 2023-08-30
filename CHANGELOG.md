@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added canonical name property 
 - Added dask support
 - Added dataset names
+- Added caching functionality
 
 ## [0.1.1] - 2023-03-27
 

@@ -1,6 +1,6 @@
 # largely adapted from pykeen.datasets.ea.openea
 import pathlib
-from typing import Dict, Literal, Tuple
+from typing import Dict, Literal, Tuple, Optional
 
 from .base import BACKEND_LITERAL, BASE_DATASET_MODULE, ZipEADatasetWithPreSplitFolds
 
@@ -55,6 +55,8 @@ class OpenEA(ZipEADatasetWithPreSplitFolds):
         version: GraphVersion = "V1",
         backend: BACKEND_LITERAL = "pandas",
         npartitions: int = 1,
+        use_cache: bool = True,
+        cache_path: Optional[pathlib.Path] = None,
     ):
         """Initializes an OpenEA dataset.
 
@@ -85,11 +87,15 @@ class OpenEA(ZipEADatasetWithPreSplitFolds):
         )
 
         # save relative paths beforehand so they are present for loading
+        inner_cache_path = f"{graph_pair}_{size}_{version}"
         inner_path = pathlib.PurePosixPath(
-            "OpenEA_dataset_v2.0", f"{graph_pair}_{size}_{version}"
+            "OpenEA_dataset_v2.0",
+            inner_cache_path
         )
-        # for file names we can use defaults
+        actual_cache_path = self.create_cache_path(OPEN_EA_MODULE, inner_cache_path, cache_path)
         super().__init__(
+            cache_path=actual_cache_path,
+            use_cache=use_cache,
             zip_path=zip_path,
             inner_path=inner_path,
             backend=backend,

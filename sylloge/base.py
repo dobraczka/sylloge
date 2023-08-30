@@ -1,10 +1,17 @@
 import logging
+import os
 import pathlib
+from abc import abstractmethod
 from dataclasses import dataclass
 from typing import (
+    cast,
     TYPE_CHECKING,
+    Any,
+    Dict,
     Generic,
+    List,
     Literal,
+    Mapping,
     Optional,
     Sequence,
     Tuple,
@@ -61,8 +68,20 @@ class EADataset(Generic[DataFrameType]):
     dataset_names: Tuple[str, str]
     folds: Optional[Sequence[TrainTestValSplit[DataFrameType]]] = None
 
+    _REL_TRIPLES_LEFT_PATH: str = "rel_triples_left_parquet"
+    _REL_TRIPLES_RIGHT_PATH: str = "rel_triples_right_parquet"
+    _ATTR_TRIPLES_LEFT_PATH: str = "attr_triples_left_parquet"
+    _ATTR_TRIPLES_RIGHT_PATH: str = "attr_triples_right_parquet"
+    _ENT_LINKS_PATH: str = "ent_links_parquet"
+    _FOLD_DIR: str = "folds"
+    _TRAIN_LINKS_PATH: str = "train_parquet"
+    _TEST_LINKS_PATH: str = "test_parquet"
+    _VAL_LINKS_PATH: str = "val_parquet"
+    _DATASET_NAMES_PATH: str = "dataset_names.txt"
+
     def __init__(
         self,
+        *,
         rel_triples_left: DataFrameType,
         rel_triples_right: DataFrameType,
         attr_triples_left: DataFrameType,
@@ -193,12 +212,181 @@ class EADataset(Generic[DataFrameType]):
             raise ValueError(f"Unknown backend {backend}")
         self._additional_backend_handling(backend)
 
+    def to_parquet(self, path: Union[str, pathlib.Path], **kwargs):
+        """Write dataset to path as several parquet files.
 
-class ZipEADataset(EADataset[pd.DataFrame]):
+        :param path: directory where dataset will be stored. Will be created if necessary.
+        :param kwargs: will be handed through to `to_parquet` functions
+        """
+        if not os.path.exists(path):
+            os.makedirs(path)
+        if not isinstance(path, pathlib.Path):
+            path = pathlib.Path(path)
+
+        # write dataset names
+        with open(path.joinpath(self.__class__._DATASET_NAMES_PATH), "w") as fh:
+            for side, name in zip(EA_SIDES, self.dataset_names):
+                fh.write(f"{side}:{name}\n")
+
+        # write tables
+        for table, table_path in zip(
+            [
+                self.rel_triples_left,
+                self.rel_triples_right,
+                self.attr_triples_left,
+                self.attr_triples_right,
+                self.ent_links,
+            ],
+            [
+                self.__class__._REL_TRIPLES_LEFT_PATH,
+                self.__class__._REL_TRIPLES_RIGHT_PATH,
+                self.__class__._ATTR_TRIPLES_LEFT_PATH,
+                self.__class__._ATTR_TRIPLES_RIGHT_PATH,
+                self.__class__._ENT_LINKS_PATH,
+            ],
+        ):
+            table.to_parquet(path.joinpath(table_path), **kwargs)
+
+        # write folds
+        if self.folds:
+            fold_path = path.joinpath(self.__class__._FOLD_DIR)
+            for fold_number, fold in enumerate(self.folds, start=1):
+                fold_dir = fold_path.joinpath(str(fold_number))
+                os.makedirs(fold_dir)
+                for links, link_path in zip(
+                    [fold.train, fold.test, fold.val],
+                    [
+                        self.__class__._TRAIN_LINKS_PATH,
+                        self.__class__._TEST_LINKS_PATH,
+                        self.__class__._VAL_LINKS_PATH,
+                    ],
+                ):
+                    table.to_parquet(fold_dir.joinpath(link_path), **kwargs)
+
+    @staticmethod
+    def _read_parquet_values(path: Union[str, pathlib.Path], backend: BACKEND_LITERAL = "pandas", **kwargs) -> Dict[str, Any]:
+        if not isinstance(path, pathlib.Path):
+            path = pathlib.Path(path)
+
+        read_parquet_fn = pd.read_parquet if backend == "pandas" else dd.read_parquet
+
+        # read dataset names
+        with open(path.joinpath(EADataset._DATASET_NAMES_PATH), "r") as fh:
+            dataset_names = tuple(line.strip().split(":")[1] for line in fh)
+            # for mypy
+            dataset_names = cast(Tuple[str,str], dataset_names)
+
+        tables = {}
+        # read tables
+        for table, table_path in zip(
+            [
+                "rel_triples_left",
+                "rel_triples_right",
+                "attr_triples_left",
+                "attr_triples_right",
+                "ent_links",
+            ],
+            [
+                EADataset._REL_TRIPLES_LEFT_PATH,
+                EADataset._REL_TRIPLES_RIGHT_PATH,
+                EADataset._ATTR_TRIPLES_LEFT_PATH,
+                EADataset._ATTR_TRIPLES_RIGHT_PATH,
+                EADataset._ENT_LINKS_PATH,
+            ],
+        ):
+            tables[table] = read_parquet_fn(path.joinpath(table_path), **kwargs)
+
+        # read folds
+        fold_path = path.joinpath(EADataset._FOLD_DIR)
+        folds = None
+        if os.path.exists(fold_path):
+            folds = []
+            for tmp_fold_dir in sorted([sub_dir for sub_dir in os.listdir(fold_path)]):
+                fold_dir = fold_path.joinpath(tmp_fold_dir)
+                train_test_val = {}
+                for links, link_path in zip(
+                    ["train", "test", "val"],
+                    [
+                        EADataset._TRAIN_LINKS_PATH,
+                        EADataset._TEST_LINKS_PATH,
+                        EADataset._VAL_LINKS_PATH,
+                    ],
+                ):
+                    train_test_val[links] = read_parquet_fn(fold_dir.joinpath(link_path), **kwargs)
+                folds.append(TrainTestValSplit(**train_test_val))
+        npartitions = 1
+        if backend == "dask":
+            npartitions = tables["rel_triples_left"].npartitions
+        return dict(dataset_names=dataset_names, folds=folds, backend=backend, npartitions=npartitions, **tables)
+
+    @classmethod
+    def read_parquet(cls, path: Union[str, pathlib.Path], backend: BACKEND_LITERAL = "pandas", **kwargs):
+        return cls(**EADataset._read_parquet_values(path=path, backend=backend, **kwargs))
+
+
+class CacheableEADataset(EADataset):
+    def __init__(
+        self,
+        *,
+        cache_path: pathlib.Path,
+        use_cache: bool = True,
+        parquet_load_options: Optional[Mapping] = None,
+        parquet_store_options: Optional[Mapping] = None,
+        **init_kwargs,
+    ):
+        self.cache_path = cache_path
+        self.parquet_load_options = parquet_load_options or {}
+        self.parquet_store_options = parquet_store_options or {}
+        backend = init_kwargs["backend"]
+        specific_npartitions = init_kwargs["npartitions"]
+        update_cache = False
+        if use_cache:
+            if self.cache_path.exists():
+                logger.info(f"Loading from cache at {self.cache_path}")
+                init_kwargs.update(self.load_from_cache(backend=backend))
+            else:
+                init_kwargs.update(self.initial_read(backend=backend))
+                update_cache = True
+        else:
+            init_kwargs.update(self.initial_read(backend=backend))
+        if specific_npartitions != 1:
+            init_kwargs["npartitions"] = specific_npartitions
+        super().__init__(**init_kwargs)
+        if update_cache:
+            self.store_cache()
+
+    def create_cache_path(
+        self,
+        pystow_module: pystow.Module,
+        inner_cache_path: str,
+        cache_path: Optional[pathlib.Path] = None,
+    ) -> pathlib.Path:
+        if cache_path is None:
+            return pystow_module.join("cached", inner_cache_path)
+        else:
+            return cache_path.joinpath(inner_cache_path)
+
+    def load_from_cache(self, backend: BACKEND_LITERAL = "pandas") -> Dict[str, Any]:
+        return EADataset._read_parquet_values(path=self.cache_path, backend=backend)
+
+
+    @abstractmethod
+    def initial_read(self, backend: BACKEND_LITERAL) -> Dict[str, Any]:
+        """Read data for initialising EADataset."""
+
+    def store_cache(self):
+        if not os.path.exists(self.cache_path):
+            os.makedirs(self.cache_path)
+        self.to_parquet(self.cache_path, **self.parquet_store_options)
+
+
+class ZipEADataset(CacheableEADataset):
     """Dataset created from zip file which is downloaded."""
 
     def __init__(
         self,
+        *,
+        cache_path: pathlib.Path,
         zip_path: str,
         inner_path: pathlib.PurePosixPath,
         dataset_names: Tuple[str, str],
@@ -209,9 +397,11 @@ class ZipEADataset(EADataset[pd.DataFrame]):
         file_name_ent_links: str = "ent_links",
         backend: BACKEND_LITERAL = "pandas",
         npartitions: int = 1,
+        use_cache: bool = True,
     ):
         """Initialize ZipEADataset.
 
+        :param cache_path: specific cache path
         :param zip_path: path to zip archive containing data
         :param inner_path: base path inside zip archive
         :param dataset_names: tuple of dataset names
@@ -222,6 +412,7 @@ class ZipEADataset(EADataset[pd.DataFrame]):
         :param file_name_ent_links: file name gold standard containing all entity links
         :param backend: Whether to use "pandas" or "dask"
         :param npartitions: how many partitions to use for each frame, when using dask
+        :param use_cache: whether to use cache or not
         """
         self.zip_path = zip_path
         self.inner_path = inner_path
@@ -231,31 +422,31 @@ class ZipEADataset(EADataset[pd.DataFrame]):
         self.file_name_attr_triples_left = file_name_attr_triples_left
         self.file_name_attr_triples_right = file_name_attr_triples_right
 
-        # load data
-        rel_triples_left = self._read_triples(
-            file_name=self.file_name_rel_triples_left, backend=backend
-        )
-        rel_triples_right = self._read_triples(
-            file_name=self.file_name_rel_triples_right, backend=backend
-        )
-        attr_triples_left = self._read_triples(
-            file_name=self.file_name_attr_triples_left, backend=backend
-        )
-        attr_triples_right = self._read_triples(
-            file_name=self.file_name_attr_triples_right, backend=backend
-        )
-        ent_links = self._read_triples(
-            file_name=self.file_name_ent_links, is_links=True, backend=backend
-        )
         super().__init__(
-            rel_triples_left=rel_triples_left,
-            rel_triples_right=rel_triples_right,
-            attr_triples_left=attr_triples_left,
-            attr_triples_right=attr_triples_right,
             dataset_names=dataset_names,
-            ent_links=ent_links,
+            cache_path=cache_path,
             backend=backend,
             npartitions=npartitions,
+            use_cache=use_cache,
+        )
+
+    def initial_read(self, backend: BACKEND_LITERAL) -> Dict[str, Any]:
+        return dict(
+            rel_triples_left=self._read_triples(
+                file_name=self.file_name_rel_triples_left, backend=backend
+            ),
+            rel_triples_right=self._read_triples(
+                file_name=self.file_name_rel_triples_right, backend=backend
+            ),
+            attr_triples_left=self._read_triples(
+                file_name=self.file_name_attr_triples_left, backend=backend
+            ),
+            attr_triples_right=self._read_triples(
+                file_name=self.file_name_attr_triples_right, backend=backend
+            ),
+            ent_links=self._read_triples(
+                file_name=self.file_name_ent_links, is_links=True, backend=backend
+            ),
         )
 
     @overload
@@ -310,6 +501,8 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset):
 
     def __init__(
         self,
+        *,
+        cache_path: pathlib.Path,
         zip_path: str,
         inner_path: pathlib.PurePosixPath,
         dataset_names: Tuple[str, str],
@@ -325,9 +518,11 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset):
         file_name_test_links: str = "test_links",
         file_name_train_links: str = "train_links",
         file_name_valid_links: str = "valid_links",
+        use_cache: bool = True,
     ):
         """Initialize ZipEADatasetWithPreSplitFolds.
 
+        :param cache_path: specific cache path
         :param zip_path: path to zip archive containing data
         :param inner_path: base path inside zip archive
         :param dataset_names: tuple of dataset names
@@ -343,8 +538,15 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset):
         :param file_name_test_links: name of test links file
         :param file_name_train_links: name of train links file
         :param file_name_valid_links: name of valid links file
+        :param use_cache: whether to use cache or not
         """
+        self.directory_name_folds = directory_name_folds
+        self.directory_names_individual_folds = directory_names_individual_folds
+        self.file_name_test_links = file_name_test_links
+        self.file_name_train_links = file_name_train_links
+        self.file_name_valid_links = file_name_valid_links
         super().__init__(
+            cache_path=cache_path,
             zip_path=zip_path,
             inner_path=inner_path,
             dataset_names=dataset_names,
@@ -355,23 +557,27 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset):
             file_name_attr_triples_right=file_name_attr_triples_right,
             backend=backend,
             npartitions=npartitions,
+            use_cache=use_cache,
         )
-        self.folds = []
-        for fold in directory_names_individual_folds:
-            fold_folder = pathlib.Path(directory_name_folds).joinpath(fold)
+
+    def initial_read(self, backend: BACKEND_LITERAL):
+        folds = []
+        for fold in self.directory_names_individual_folds:
+            fold_folder = pathlib.Path(self.directory_name_folds).joinpath(fold)
             train = self._read_triples(
-                fold_folder.joinpath(file_name_train_links),
+                fold_folder.joinpath(self.file_name_train_links),
                 is_links=True,
-                backend=self.backend,
+                backend=backend,
             )
             test = self._read_triples(
-                fold_folder.joinpath(file_name_test_links),
+                fold_folder.joinpath(self.file_name_test_links),
                 is_links=True,
-                backend=self.backend,
+                backend=backend,
             )
             val = self._read_triples(
-                fold_folder.joinpath(file_name_valid_links),
+                fold_folder.joinpath(self.file_name_valid_links),
                 is_links=True,
-                backend=self.backend,
+                backend=backend,
             )
-            self.folds.append(TrainTestValSplit(train=train, test=test, val=val))
+            folds.append(TrainTestValSplit(train=train, test=test, val=val))
+        return {**super().initial_read(backend=backend), **dict(folds=folds)}
