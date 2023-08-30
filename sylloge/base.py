@@ -169,6 +169,12 @@ class EADataset(Generic[DataFrameType]):
                 self.attr_triples_left = self.attr_triples_left.compute()
                 self.attr_triples_right = self.attr_triples_right.compute()
                 self.ent_links = self.ent_links.compute()
+                if self.folds:
+                    for fold in self.folds:
+                        fold.train = fold.train.compute()
+                        fold.test = fold.test.compute()
+                        fold.val = fold.val.compute()
+
         elif backend == "dask":
             self._backend = "dask"
             if isinstance(self.rel_triples_left, dd.DataFrame):
@@ -188,6 +194,17 @@ class EADataset(Generic[DataFrameType]):
                     self.ent_links = self.ent_links.repartition(
                         npartitions=self.npartitions
                     )
+                    if self.folds:
+                        for fold in self.folds:
+                            fold.train = fold.train.repartition(
+                                npartitions=self.npartitions
+                            )
+                            fold.test = fold.test.repartition(
+                                npartitions=self.npartitions
+                            )
+                            fold.val = fold.val.repartition(
+                                npartitions=self.npartitions
+                            )
                 else:
                     return
 
@@ -207,6 +224,17 @@ class EADataset(Generic[DataFrameType]):
                 self.ent_links = dd.from_pandas(
                     self.ent_links, npartitions=self.npartitions
                 )
+                if self.folds:
+                    for fold in self.folds:
+                        fold.train = dd.from_pandas(
+                            fold.train, npartitions=self.npartitions
+                        )
+                        fold.test = dd.from_pandas(
+                            fold.test, npartitions=self.npartitions
+                        )
+                        fold.val = dd.from_pandas(
+                            fold.val, npartitions=self.npartitions
+                        )
         else:
             raise ValueError(f"Unknown backend {backend}")
         self._additional_backend_handling(backend)

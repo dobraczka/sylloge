@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added dataset names
 - Added caching functionality
 
+### Fixed
+
+- Fixed backend handling of folds
+
 ## [0.1.1] - 2023-03-27
 
 ### Fixed
