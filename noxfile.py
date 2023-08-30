@@ -5,6 +5,8 @@ from nox_poetry import Session, session
 def tests(session: Session) -> None:
     args = session.posargs or ["--cov", "--cov-report=xml"]
     session.run_always("poetry", "install", external=True)
+    session.install("pytest")
+    session.install("pytest-cov")
     session.run("pytest", *args)
 
 
