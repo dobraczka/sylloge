@@ -233,14 +233,55 @@ def test_open_ea_mock(
         else:
             assert isinstance(ds.rel_triples_left, dd.DataFrame)
             assert ds.rel_triples_left.npartitions == ds.npartitions
-            new_npartitions = 10
-            assert (
-                OpenEA(
-                    backend=backend,
-                    npartitions=new_npartitions,
-                    use_cache=use_cache,
-                    cache_path=tmp_path,
-                    **params,
-                ).rel_triples_left.npartitions
-                == new_npartitions
-            )
+
+
+@pytest.mark.parametrize("use_cache", [False, True])
+def test_backend_handling(use_cache, mocker, tmp_path):
+    rm = ResourceMocker()
+    mocker.patch("sylloge.base.read_zipfile_csv", rm.mock_read_zipfile_csv)
+    mocker.patch(
+        "sylloge.base.read_dask_df_archive_csv", rm.mock_read_dask_df_archive_csv
+    )
+    # test repartitioning
+    new_npartitions = 10
+    # run twice to check if caching works here
+    rerun = 2 if use_cache else 1
+    for _ in range(rerun):
+        ds = OpenEA(
+            backend="dask",
+            npartitions=new_npartitions,
+            use_cache=use_cache,
+            cache_path=tmp_path,
+        )
+        assert isinstance(ds.rel_triples_left, dd.DataFrame)
+        assert isinstance(ds.rel_triples_right, dd.DataFrame)
+        assert isinstance(ds.attr_triples_left, dd.DataFrame)
+        assert isinstance(ds.attr_triples_right, dd.DataFrame)
+        assert isinstance(ds.ent_links, dd.DataFrame)
+        for fold in ds.folds:
+            assert isinstance(fold.train, dd.DataFrame)
+            assert isinstance(fold.test, dd.DataFrame)
+            assert isinstance(fold.val, dd.DataFrame)
+
+        assert ds.rel_triples_left.npartitions == new_npartitions
+        assert ds.rel_triples_right.npartitions == new_npartitions
+        assert ds.attr_triples_right.npartitions == new_npartitions
+        assert ds.attr_triples_right.npartitions == new_npartitions
+        assert ds.ent_links.npartitions == new_npartitions
+        assert ds.folds
+        for fold in ds.folds:
+            assert fold.train.npartitions == new_npartitions
+            assert fold.test.npartitions == new_npartitions
+            assert fold.val.npartitions == new_npartitions
+
+        # test backend changing
+        ds.backend = "pandas"
+        assert isinstance(ds.rel_triples_left, pd.DataFrame)
+        assert isinstance(ds.rel_triples_right, pd.DataFrame)
+        assert isinstance(ds.attr_triples_left, pd.DataFrame)
+        assert isinstance(ds.attr_triples_right, pd.DataFrame)
+        assert isinstance(ds.ent_links, pd.DataFrame)
+        for fold in ds.folds:
+            assert isinstance(fold.train, pd.DataFrame)
+            assert isinstance(fold.test, pd.DataFrame)
+            assert isinstance(fold.val, pd.DataFrame)
