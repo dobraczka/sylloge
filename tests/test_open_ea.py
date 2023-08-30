@@ -207,13 +207,11 @@ def test_open_ea_mock(
     mocker.patch(
         "sylloge.base.read_dask_df_archive_csv", rm.mock_read_dask_df_archive_csv
     )
-    for (use_cache, cache_exists) in [(False, False), (True,False), (True,True)]:
+    for (use_cache, cache_exists) in [(False, False), (True, False), (True, True)]:
         if cache_exists:
             # ensure these methods don't get called
             mocker.patch("sylloge.base.read_zipfile_csv", rm.assert_not_called)
-            mocker.patch(
-                "sylloge.base.read_dask_df_archive_csv", rm.assert_not_called
-            )
+            mocker.patch("sylloge.base.read_dask_df_archive_csv", rm.assert_not_called)
         ds = OpenEA(backend=backend, use_cache=use_cache, cache_path=tmp_path, **params)
         assert ds.__repr__() is not None
         assert ds.canonical_name

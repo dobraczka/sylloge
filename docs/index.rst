@@ -66,6 +66,60 @@ You can use `dask <https://www.dask.org/>`_ as backend for larger datasets:
 
 Which replaces pandas DataFrames with dask DataFrames.
 
+Datasets can be written/read as parquet via `to_parquet` or `read_parquet`.
+After the initial read datasets are cached using this format. The `cache_path` can be explicitly set and caching behaviour can be disable via `use_cache=False`, when initalizing a dataset.
+
+Some datasets come with pre-determined splits:
+
+.. code-block:: bash
+
+    tree ~/.data/sylloge/open_ea/cached/D_W_15K_V1 
+    ├── attr_triples_left_parquet
+    ├── attr_triples_right_parquet
+    ├── dataset_names.txt
+    ├── ent_links_parquet
+    ├── folds
+    │   ├── 1
+    │   │   ├── test_parquet
+    │   │   ├── train_parquet
+    │   │   └── val_parquet
+    │   ├── 2
+    │   │   ├── test_parquet
+    │   │   ├── train_parquet
+    │   │   └── val_parquet
+    │   ├── 3
+    │   │   ├── test_parquet
+    │   │   ├── train_parquet
+    │   │   └── val_parquet
+    │   ├── 4
+    │   │   ├── test_parquet
+    │   │   ├── train_parquet
+    │   │   └── val_parquet
+    │   └── 5
+    │       ├── test_parquet
+    │       ├── train_parquet
+    │       └── val_parquet
+    ├── rel_triples_left_parquet
+    └── rel_triples_right_parquet
+
+
+some don't:
+
+.. code-block:: bash
+
+    tree ~/.data/sylloge/oaei/cached/starwars_swg
+    ├── attr_triples_left_parquet
+    │   └── part.0.parquet
+    ├── attr_triples_right_parquet
+    │   └── part.0.parquet
+    ├── dataset_names.txt
+    ├── ent_links_parquet
+    │   └── part.0.parquet
+    ├── rel_triples_left_parquet
+    │   └── part.0.parquet
+    └── rel_triples_right_parquet
+        └── part.0.parquet
+
 
 You can install sylloge via pip:
 

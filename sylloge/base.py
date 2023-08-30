@@ -4,12 +4,10 @@ import pathlib
 from abc import abstractmethod
 from dataclasses import dataclass
 from typing import (
-    cast,
     TYPE_CHECKING,
     Any,
     Dict,
     Generic,
-    List,
     Literal,
     Mapping,
     Optional,
@@ -17,6 +15,7 @@ from typing import (
     Tuple,
     TypeVar,
     Union,
+    cast,
     overload,
 )
 
@@ -217,6 +216,8 @@ class EADataset(Generic[DataFrameType]):
 
         :param path: directory where dataset will be stored. Will be created if necessary.
         :param kwargs: will be handed through to `to_parquet` functions
+
+        .. seealso:: :func:`read_parquet`
         """
         if not os.path.exists(path):
             os.makedirs(path)
@@ -264,7 +265,9 @@ class EADataset(Generic[DataFrameType]):
                     table.to_parquet(fold_dir.joinpath(link_path), **kwargs)
 
     @staticmethod
-    def _read_parquet_values(path: Union[str, pathlib.Path], backend: BACKEND_LITERAL = "pandas", **kwargs) -> Dict[str, Any]:
+    def _read_parquet_values(
+        path: Union[str, pathlib.Path], backend: BACKEND_LITERAL = "pandas", **kwargs
+    ) -> Dict[str, Any]:
         if not isinstance(path, pathlib.Path):
             path = pathlib.Path(path)
 
@@ -274,7 +277,7 @@ class EADataset(Generic[DataFrameType]):
         with open(path.joinpath(EADataset._DATASET_NAMES_PATH), "r") as fh:
             dataset_names = tuple(line.strip().split(":")[1] for line in fh)
             # for mypy
-            dataset_names = cast(Tuple[str,str], dataset_names)
+            dataset_names = cast(Tuple[str, str], dataset_names)
 
         tables = {}
         # read tables
@@ -301,7 +304,7 @@ class EADataset(Generic[DataFrameType]):
         folds = None
         if os.path.exists(fold_path):
             folds = []
-            for tmp_fold_dir in sorted([sub_dir for sub_dir in os.listdir(fold_path)]):
+            for tmp_fold_dir in sorted(sub_dir for sub_dir in os.listdir(fold_path)):
                 fold_dir = fold_path.joinpath(tmp_fold_dir)
                 train_test_val = {}
                 for links, link_path in zip(
@@ -312,16 +315,44 @@ class EADataset(Generic[DataFrameType]):
                         EADataset._VAL_LINKS_PATH,
                     ],
                 ):
-                    train_test_val[links] = read_parquet_fn(fold_dir.joinpath(link_path), **kwargs)
+                    train_test_val[links] = read_parquet_fn(
+                        fold_dir.joinpath(link_path), **kwargs
+                    )
                 folds.append(TrainTestValSplit(**train_test_val))
         npartitions = 1
         if backend == "dask":
             npartitions = tables["rel_triples_left"].npartitions
-        return dict(dataset_names=dataset_names, folds=folds, backend=backend, npartitions=npartitions, **tables)
+        return dict(
+            dataset_names=dataset_names,
+            folds=folds,
+            backend=backend,
+            npartitions=npartitions,
+            **tables,
+        )
 
     @classmethod
-    def read_parquet(cls, path: Union[str, pathlib.Path], backend: BACKEND_LITERAL = "pandas", **kwargs):
-        return cls(**EADataset._read_parquet_values(path=path, backend=backend, **kwargs))
+    def read_parquet(
+        cls,
+        path: Union[str, pathlib.Path],
+        backend: BACKEND_LITERAL = "pandas",
+        **kwargs,
+    ) -> "EADataset":
+        """Read dataset from parquet files in given `path`.
+
+        This function expects the left/right attribute/relation triples and entity links as well as a `dataset_names.txt`
+
+        Optionally folds are read from a `folds` directory, with numbered fold subdirectories containing train/test/val links.
+
+        :param path: Directory with files
+        :param backend: Whether to use pandas or dask for reading
+        :param kwargs: passed on to the respective read function
+        :return: EADataset read from parquet
+
+        .. seealso:: :func:`to_parquet`
+        """
+        return cls(
+            **EADataset._read_parquet_values(path=path, backend=backend, **kwargs)
+        )
 
 
 class CacheableEADataset(EADataset):
@@ -334,6 +365,14 @@ class CacheableEADataset(EADataset):
         parquet_store_options: Optional[Mapping] = None,
         **init_kwargs,
     ):
+        """EADataset that uses caching after initial read.
+
+        :param cache_path: Path where cache will be stored/loaded
+        :param use_cache: whether to use cache
+        :param parquet_load_options: handed through to parquet loading function
+        :param parquet_store_options: handed through to parquet writing function
+        :param init_kwargs: other arguments for creating the EADataset instance
+        """
         self.cache_path = cache_path
         self.parquet_load_options = parquet_load_options or {}
         self.parquet_store_options = parquet_store_options or {}
@@ -353,6 +392,7 @@ class CacheableEADataset(EADataset):
             init_kwargs["npartitions"] = specific_npartitions
         super().__init__(**init_kwargs)
         if update_cache:
+            logger.info(f"Caching dataset at {self.cache_path}")
             self.store_cache()
 
     def create_cache_path(
@@ -361,22 +401,26 @@ class CacheableEADataset(EADataset):
         inner_cache_path: str,
         cache_path: Optional[pathlib.Path] = None,
     ) -> pathlib.Path:
+        """Uses either pystow module or cache_path to create cache path.
+
+        :param pystow_module: module where data is stored
+        :param inner_cache_path: path relative to pystow/cache path
+        :param cache_path: alternative to pystow module
+        :return: cache path as `pathlib.Path`
+        """
         if cache_path is None:
-            return pystow_module.join("cached", inner_cache_path)
+            return pystow_module.join("cached", inner_cache_path, ensure_exists=False)
         else:
             return cache_path.joinpath(inner_cache_path)
 
     def load_from_cache(self, backend: BACKEND_LITERAL = "pandas") -> Dict[str, Any]:
         return EADataset._read_parquet_values(path=self.cache_path, backend=backend)
 
-
     @abstractmethod
     def initial_read(self, backend: BACKEND_LITERAL) -> Dict[str, Any]:
         """Read data for initialising EADataset."""
 
     def store_cache(self):
-        if not os.path.exists(self.cache_path):
-            os.makedirs(self.cache_path)
         self.to_parquet(self.cache_path, **self.parquet_store_options)
 
 
@@ -401,7 +445,7 @@ class ZipEADataset(CacheableEADataset):
     ):
         """Initialize ZipEADataset.
 
-        :param cache_path: specific cache path
+        :param cache_path: Path where cache will be stored/loaded
         :param zip_path: path to zip archive containing data
         :param inner_path: base path inside zip archive
         :param dataset_names: tuple of dataset names
@@ -522,7 +566,7 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset):
     ):
         """Initialize ZipEADatasetWithPreSplitFolds.
 
-        :param cache_path: specific cache path
+        :param cache_path: Path where cache will be stored/loaded
         :param zip_path: path to zip archive containing data
         :param inner_path: base path inside zip archive
         :param dataset_names: tuple of dataset names
@@ -530,34 +574,37 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset):
         :param file_name_rel_triples_right: file name of right relation triples
         :param file_name_attr_triples_left: file name of left attribute triples
         :param file_name_attr_triples_right: file name of right attribute triples
+        :param file_name_ent_links: file name gold standard containing all entity links
         :param backend: Whether to use "pandas" or "dask"
         :param npartitions: how many partitions to use for each frame, when using dask
-        :param file_name_ent_links: file name gold standard containing all entity links
-        :param directory_name_folds: directory name containing folds
-        :param directory_names_individual_folds: directory names of individual folds
-        :param file_name_test_links: name of test links file
-        :param file_name_train_links: name of train links file
-        :param file_name_valid_links: name of valid links file
+        :param directory_name_folds: name of the folds directory
+        :param directory_names_individual_folds: name of individual folds
+        :param file_name_test_links: name of test link file
+        :param file_name_train_links: name of train link file
+        :param file_name_valid_links: name of valid link file
         :param use_cache: whether to use cache or not
         """
-        self.directory_name_folds = directory_name_folds
+        self.zip_path = zip_path
+        self.inner_path = inner_path
         self.directory_names_individual_folds = directory_names_individual_folds
-        self.file_name_test_links = file_name_test_links
+        self.directory_name_folds = directory_name_folds
         self.file_name_train_links = file_name_train_links
+        self.file_name_test_links = file_name_test_links
         self.file_name_valid_links = file_name_valid_links
+
         super().__init__(
-            cache_path=cache_path,
+            dataset_names=dataset_names,
             zip_path=zip_path,
             inner_path=inner_path,
-            dataset_names=dataset_names,
+            cache_path=cache_path,
+            backend=backend,
+            npartitions=npartitions,
+            use_cache=use_cache,
             file_name_rel_triples_left=file_name_rel_triples_left,
             file_name_rel_triples_right=file_name_rel_triples_right,
             file_name_ent_links=file_name_ent_links,
             file_name_attr_triples_left=file_name_attr_triples_left,
             file_name_attr_triples_right=file_name_attr_triples_right,
-            backend=backend,
-            npartitions=npartitions,
-            use_cache=use_cache,
         )
 
     def initial_read(self, backend: BACKEND_LITERAL):

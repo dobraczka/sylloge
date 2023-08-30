@@ -23,10 +23,13 @@ def test_oaei_mock(task, backend, mocker, tmp_path):
         "sylloge.oaei_loader.read_dask_bag_from_archive_text",
         rm.mock_read_dask_bag_from_archive_text,
     )
-    for (use_cache, cache_exists) in [(False, False), (True,False), (True,True)]:
+    for (use_cache, cache_exists) in [(False, False), (True, False), (True, True)]:
         if cache_exists:
             # ensure this method doesn't get called
-            mocker.patch("sylloge.oaei_loader.read_dask_bag_from_archive_text", rm.assert_not_called)
+            mocker.patch(
+                "sylloge.oaei_loader.read_dask_bag_from_archive_text",
+                rm.assert_not_called,
+            )
         ds = OAEI(backend=backend, task=task, use_cache=use_cache, cache_path=tmp_path)
         assert ds.__repr__() is not None
         assert ds.canonical_name

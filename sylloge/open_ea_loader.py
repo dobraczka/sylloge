@@ -1,6 +1,6 @@
 # largely adapted from pykeen.datasets.ea.openea
 import pathlib
-from typing import Dict, Literal, Tuple, Optional
+from typing import Dict, Literal, Optional, Tuple
 
 from .base import BACKEND_LITERAL, BASE_DATASET_MODULE, ZipEADatasetWithPreSplitFolds
 
@@ -65,6 +65,8 @@ class OpenEA(ZipEADatasetWithPreSplitFolds):
         :param version: which version to use ("V1" or "V2")
         :param backend: Whether to use "pandas" or "dask"
         :param npartitions: how many partitions to use for each frame, when using dask
+        :param use_cache: whether to use cache or not
+        :param cache_path: Path where cache will be stored/loaded
         :raises ValueError: if unknown graph_pair,size or version values are provided
         """
         # Input validation.
@@ -86,13 +88,11 @@ class OpenEA(ZipEADatasetWithPreSplitFolds):
             download_kwargs=dict(hexdigests=dict(sha512=OpenEA._SHA512)),
         )
 
-        # save relative paths beforehand so they are present for loading
         inner_cache_path = f"{graph_pair}_{size}_{version}"
-        inner_path = pathlib.PurePosixPath(
-            "OpenEA_dataset_v2.0",
-            inner_cache_path
+        inner_path = pathlib.PurePosixPath("OpenEA_dataset_v2.0", inner_cache_path)
+        actual_cache_path = self.create_cache_path(
+            OPEN_EA_MODULE, inner_cache_path, cache_path
         )
-        actual_cache_path = self.create_cache_path(OPEN_EA_MODULE, inner_cache_path, cache_path)
         super().__init__(
             cache_path=actual_cache_path,
             use_cache=use_cache,

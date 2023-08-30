@@ -37,6 +37,10 @@ class MovieGraphBenchmark(CacheableEADataset):
         """Initialize a MovieGraphBenchmark dataset.
 
         :param graph_pair: which graph pair to use of "imdb-tdmb","imdb-tvdb" or "tmdb-tvdb"
+        :param backend: Whether to use "pandas" or "dask"
+        :param npartitions: how many partitions to use for each frame, when using dask
+        :param use_cache: whether to use cache or not
+        :param cache_path: Path where cache will be stored/loaded
         :raises ValueError: if unknown graph pair
         """
         # Input validation.

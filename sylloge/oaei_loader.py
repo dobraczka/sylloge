@@ -193,6 +193,8 @@ class OAEI(CacheableEADataset):
         :param task: Name of the task. Has to be one of {starwars-swg,starwars-swtor,marvelcinematicuniverse-marvel,memoryalpha-memorybeta, memoryalpha-stexpanded}
         :param backend: Whether to use "pandas" or "dask"
         :param npartitions: how many partitions to use for each frame, when using dask
+        :param use_cache: whether to use cache or not
+        :param cache_path: Path where cache will be stored/loaded
         :raises ValueError: if unknown task value is provided
         """
         if task not in typing.get_args(OAEI_TASK_NAME):
