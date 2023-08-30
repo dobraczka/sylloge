@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sylloge"
-version = "0.1.1"
+version = "0.2.0"
 description = "Small library to simplify collecting and loading of entity alignment benchmark datasets"
 authors = ["Daniel Obraczka <obraczka@informatik.uni-leipzig.de>"]
 license = "MIT"
