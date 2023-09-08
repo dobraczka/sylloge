@@ -292,17 +292,20 @@ class EADataset(Generic[DataFrameType]):
                 ):
                     table.to_parquet(fold_dir.joinpath(link_path), **kwargs)
 
-    @staticmethod
+    @classmethod
     def _read_parquet_values(
-        path: Union[str, pathlib.Path], backend: BACKEND_LITERAL = "pandas", **kwargs
-    ) -> Dict[str, Any]:
+        cls,
+        path: Union[str, pathlib.Path],
+        backend: BACKEND_LITERAL = "pandas",
+        **kwargs,
+    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         if not isinstance(path, pathlib.Path):
             path = pathlib.Path(path)
 
         read_parquet_fn = pd.read_parquet if backend == "pandas" else dd.read_parquet
 
         # read dataset names
-        with open(path.joinpath(EADataset._DATASET_NAMES_PATH), "r") as fh:
+        with open(path.joinpath(cls._DATASET_NAMES_PATH), "r") as fh:
             dataset_names = tuple(line.strip().split(":")[1] for line in fh)
             # for mypy
             dataset_names = cast(Tuple[str, str], dataset_names)
@@ -318,17 +321,17 @@ class EADataset(Generic[DataFrameType]):
                 "ent_links",
             ],
             [
-                EADataset._REL_TRIPLES_LEFT_PATH,
-                EADataset._REL_TRIPLES_RIGHT_PATH,
-                EADataset._ATTR_TRIPLES_LEFT_PATH,
-                EADataset._ATTR_TRIPLES_RIGHT_PATH,
-                EADataset._ENT_LINKS_PATH,
+                cls._REL_TRIPLES_LEFT_PATH,
+                cls._REL_TRIPLES_RIGHT_PATH,
+                cls._ATTR_TRIPLES_LEFT_PATH,
+                cls._ATTR_TRIPLES_RIGHT_PATH,
+                cls._ENT_LINKS_PATH,
             ],
         ):
             tables[table] = read_parquet_fn(path.joinpath(table_path), **kwargs)
 
         # read folds
-        fold_path = path.joinpath(EADataset._FOLD_DIR)
+        fold_path = path.joinpath(cls._FOLD_DIR)
         folds = None
         if os.path.exists(fold_path):
             folds = []
@@ -338,9 +341,9 @@ class EADataset(Generic[DataFrameType]):
                 for links, link_path in zip(
                     ["train", "test", "val"],
                     [
-                        EADataset._TRAIN_LINKS_PATH,
-                        EADataset._TEST_LINKS_PATH,
-                        EADataset._VAL_LINKS_PATH,
+                        cls._TRAIN_LINKS_PATH,
+                        cls._TEST_LINKS_PATH,
+                        cls._VAL_LINKS_PATH,
                     ],
                 ):
                     train_test_val[links] = read_parquet_fn(
@@ -350,12 +353,15 @@ class EADataset(Generic[DataFrameType]):
         npartitions = 1
         if backend == "dask":
             npartitions = tables["rel_triples_left"].npartitions
-        return dict(
-            dataset_names=dataset_names,
-            folds=folds,
-            backend=backend,
-            npartitions=npartitions,
-            **tables,
+        return (
+            dict(
+                dataset_names=dataset_names,
+                folds=folds,
+                backend=backend,
+                npartitions=npartitions,
+                **tables,
+            ),
+            {},
         )
 
     @classmethod
@@ -378,12 +384,15 @@ class EADataset(Generic[DataFrameType]):
 
         .. seealso:: :func:`to_parquet`
         """
-        return cls(
-            **EADataset._read_parquet_values(path=path, backend=backend, **kwargs)
+        init_kwargs, additional_kwargs = cls._read_parquet_values(
+            path=path, backend=backend, **kwargs
         )
+        instance = cls(**init_kwargs)
+        instance.__dict__.update(additional_kwargs)
+        return instance
 
 
-class CacheableEADataset(EADataset):
+class CacheableEADataset(EADataset[DataFrameType]):
     def __init__(
         self,
         *,
@@ -407,10 +416,15 @@ class CacheableEADataset(EADataset):
         backend = init_kwargs["backend"]
         specific_npartitions = init_kwargs["npartitions"]
         update_cache = False
+        additional_kwargs: Dict[str, Any] = {}
         if use_cache:
             if self.cache_path.exists():
                 logger.info(f"Loading from cache at {self.cache_path}")
-                init_kwargs.update(self.load_from_cache(backend=backend))
+                ea_ds_kwargs, new_additional_kwargs = self.load_from_cache(
+                    backend=backend
+                )
+                init_kwargs.update(ea_ds_kwargs)
+                additional_kwargs.update(new_additional_kwargs)
             else:
                 init_kwargs.update(self.initial_read(backend=backend))
                 update_cache = True
@@ -418,6 +432,7 @@ class CacheableEADataset(EADataset):
             init_kwargs.update(self.initial_read(backend=backend))
         if specific_npartitions != 1:
             init_kwargs["npartitions"] = specific_npartitions
+        self.__dict__.update(additional_kwargs)
         super().__init__(**init_kwargs)
         if update_cache:
             logger.info(f"Caching dataset at {self.cache_path}")
@@ -441,8 +456,12 @@ class CacheableEADataset(EADataset):
         else:
             return cache_path.joinpath(inner_cache_path)
 
-    def load_from_cache(self, backend: BACKEND_LITERAL = "pandas") -> Dict[str, Any]:
-        return EADataset._read_parquet_values(path=self.cache_path, backend=backend)
+    def load_from_cache(
+        self, backend: BACKEND_LITERAL = "pandas"
+    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        return self.__class__._read_parquet_values(
+            path=self.cache_path, backend=backend
+        )
 
     @abstractmethod
     def initial_read(self, backend: BACKEND_LITERAL) -> Dict[str, Any]:

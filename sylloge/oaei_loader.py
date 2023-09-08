@@ -3,12 +3,12 @@ import logging
 import pathlib
 import typing
 from collections import namedtuple
-from typing import Dict, Literal, Optional, Tuple
+from typing import Any, Dict, Literal, Optional, Tuple, Union
 
 import dask.dataframe as dd
 import pandas as pd
 
-from .base import BASE_DATASET_MODULE, CacheableEADataset
+from .base import BASE_DATASET_MODULE, CacheableEADataset, DataFrameType
 from .dask import read_dask_bag_from_archive_text
 from .typing import (
     BACKEND_LITERAL,
@@ -90,7 +90,7 @@ def fault_tolerant_parse_nt(
     return subj, pred, obj, triple_type
 
 
-class OAEI(CacheableEADataset):
+class OAEI(CacheableEADataset[DataFrameType]):
     """The  OAEI (Ontology Alignment Evaluation Initiative) Knowledge Graph Track tasks contain graphs created from fandom wikis.
 
     Five integration tasks are available:
@@ -102,6 +102,12 @@ class OAEI(CacheableEADataset):
 
     More information can be found at the `website <http://oaei.ontologymatching.org/2019/knowledgegraph/index.html>`_.
     """
+
+    class_links: pd.DataFrame
+    property_links: pd.DataFrame
+
+    _CLASS_LINKS_PATH: str = "class_links_parquet"
+    _PROPERTY_LINKS_PATH: str = "property_links_parquet"
 
     _TASK_URLS: Dict[OAEI_TASK_NAME, URL_SHA512_HASH] = {
         "starwars-swg": URL_SHA512_HASH(
@@ -251,32 +257,6 @@ class OAEI(CacheableEADataset):
     def _param_repr(self) -> str:
         return f"task={self.task}, "
 
-    def _additional_backend_handling(self, backend: BACKEND_LITERAL):
-        if backend == "pandas":
-            self._backend = "pandas"
-            if isinstance(self.property_links, pd.DataFrame):
-                return
-            else:
-                self.property_links = self.property_links.compute()
-                self.class_links = self.class_links.compute()
-        elif backend == "dask":
-            self._backend = "dask"
-            if isinstance(self.property_links, dd.DataFrame):
-                if self.property_links.npartitions != self.npartitions:
-                    self.property_links = self.property_links.repartition(
-                        npartitions=self.npartitions
-                    )
-                    self.class_links = self.class_links.repartition(
-                        npartitions=self.npartitions
-                    )
-            else:
-                self.property_links = dd.from_pandas(
-                    self.property_links, npartitions=self.npartitions
-                )
-                self.class_links = dd.from_pandas(
-                    self.class_links, npartitions=self.npartitions
-                )
-
     @property
     def _statistics(self) -> str:
         this_ds_stats = self.__class__._precalc_ds_statistics[self.task]
@@ -367,3 +347,57 @@ class OAEI(CacheableEADataset):
             df[df[REL_ATTR_COL] == "attr"][COLUMNS],
             df[df[REL_ATTR_COL] == "rel"][COLUMNS],
         )
+
+    def to_parquet(self, path: Union[str, pathlib.Path], **kwargs):
+        """Write dataset to path as several parquet files.
+
+        :param path: directory where dataset will be stored. Will be created if necessary.
+        :param kwargs: will be handed through to `to_parquet` functions
+
+        .. seealso:: :func:`read_parquet`
+        """
+        if not isinstance(path, pathlib.Path):
+            path = pathlib.Path(path)
+        super().to_parquet(path=path, **kwargs)
+
+        # write tables
+        for table, table_path in zip(
+            [
+                self.property_links,
+                self.class_links,
+            ],
+            [
+                self.__class__._PROPERTY_LINKS_PATH,
+                self.__class__._CLASS_LINKS_PATH,
+            ],
+        ):
+            table.to_parquet(path.joinpath(table_path), **kwargs)
+
+    @classmethod
+    def _read_parquet_values(
+        cls,
+        path: Union[str, pathlib.Path],
+        backend: BACKEND_LITERAL = "pandas",
+        **kwargs,
+    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        if not isinstance(path, pathlib.Path):
+            path = pathlib.Path(path)
+
+        init_args, additional_init_args = super()._read_parquet_values(
+            path=path, backend=backend, **kwargs
+        )
+
+        for table, table_path in zip(
+            [
+                "property_links",
+                "class_links",
+            ],
+            [
+                cls._PROPERTY_LINKS_PATH,
+                cls._CLASS_LINKS_PATH,
+            ],
+        ):
+            additional_init_args[table] = pd.read_parquet(
+                path.joinpath(table_path), **kwargs
+            )
+        return init_args, additional_init_args

@@ -42,5 +42,9 @@ def test_oaei_mock(task, backend, mocker, tmp_path):
 
         if backend == "pandas":
             assert isinstance(ds.rel_triples_left, pd.DataFrame)
+            ds.backend = "dask"
+            assert isinstance(ds.rel_triples_left, dd.DataFrame)
         else:
             assert isinstance(ds.rel_triples_left, dd.DataFrame)
+            ds.backend = "pandas"
+            assert isinstance(ds.rel_triples_left, pd.DataFrame)
