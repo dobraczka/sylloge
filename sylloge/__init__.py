@@ -6,11 +6,13 @@ from .id_mapped import IdMappedEADataset
 from .moviegraph_benchmark_loader import MovieGraphBenchmark
 from .oaei_loader import OAEI
 from .open_ea_loader import OpenEA
+from .med_bbk_loader import MED_BBK
 
 __all__ = [
     "OpenEA",
     "MovieGraphBenchmark",
     "OAEI",
+    "MED_BBK",
     "IdMappedEADataset",
     "EADataset",
 ]
