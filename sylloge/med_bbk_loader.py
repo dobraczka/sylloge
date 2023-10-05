@@ -1,5 +1,5 @@
 import pathlib
-from typing import Dict, Optional, Any
+from typing import Any, Dict, Optional
 
 from .base import BACKEND_LITERAL, BASE_DATASET_MODULE, ZipEADataset
 

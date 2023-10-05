@@ -1,4 +1,5 @@
 import pytest
+
 from sylloge import MED_BBK
 
 
@@ -9,7 +10,7 @@ def test_open_ea():
     assert len(ds.rel_triples_right) == 50307
     assert len(ds.attr_triples_left) == 11467
     assert len(ds.attr_triples_right) == 44987
-    assert ds.dataset_names == ("MED","BBK")
+    assert ds.dataset_names == ("MED", "BBK")
     # check if switch was correct
     assert "集聚肠杆菌感染" in set(ds.rel_triples_right["head"])
     assert "集聚肠杆菌感染" in set(ds.ent_links["right"])
