@@ -139,5 +139,6 @@ Datasets
 | Dataset family name | Year | # of Datasets | Sources | References |
 |:--------------------|:----:|:-------------:|:-------:|:----------|
 | [OpenEA](https://sylloge.readthedocs.io/en/latest/source/datasets.html#sylloge.OpenEA) | 2020 | 16 | DBpedia, Yago, Wikidata |  [Paper](http://www.vldb.org/pvldb/vol13/p2326-sun.pdf), [Repo](https://github.com/nju-websoft/OpenEA#dataset-overview) |
+| [MED-BBK](https://sylloge.readthedocs.io/en/latest/source/datasets.html#sylloge.MED_BBK) | 2020 | 1 | Baidu Baike |  [Paper](https://aclanthology.org/2020.coling-industry.17.pdf), [Repo](https://github.com/ZihengZZH/industry-eval-EA/tree/main#benchmark) |
 | [MovieGraphBenchmark](https://sylloge.readthedocs.io/en/latest/source/datasets.html#sylloge.MovieGraphBenchmark) | 2022 | 3 | IMDB, TMDB, TheTVDB | [Paper](http://ceur-ws.org/Vol-2873/paper8.pdf), [Repo](https://github.com/ScaDS/MovieGraphBenchmark) |
 | [OAEI](https://sylloge.readthedocs.io/en/latest/source/datasets.html#sylloge.OAEI) | 2022 | 5 | Fandom wikis | [Paper](https://ceur-ws.org/Vol-3324/oaei22_paper0.pdf), [Website](http://oaei.ontologymatching.org/2022/knowledgegraph/index.html) |
