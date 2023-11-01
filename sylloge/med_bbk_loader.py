@@ -59,7 +59,7 @@ class MED_BBK(ZipEADataset):
         ent_links = inital_dict["ent_links"]
         switched_columns = [ent_links.columns[1], ent_links.columns[0]]
         ent_links = ent_links[switched_columns]
-        ent_links.columns = switched_columns
+        ent_links.columns = ["left", "right"]
         return dict(
             rel_triples_left=inital_dict["rel_triples_right"],
             rel_triples_right=inital_dict["rel_triples_left"],
