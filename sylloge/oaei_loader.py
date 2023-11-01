@@ -8,7 +8,12 @@ from typing import Any, Dict, Literal, Optional, Tuple, Union
 import dask.dataframe as dd
 import pandas as pd
 
-from .base import BASE_DATASET_MODULE, CacheableEADataset, DataFrameType
+from .base import (
+    BASE_DATASET_MODULE,
+    CacheableEADataset,
+    DataFrameType,
+    DatasetStatistics,
+)
 from .dask import read_dask_bag_from_archive_text
 from .typing import (
     BACKEND_LITERAL,
@@ -134,55 +139,100 @@ class OAEI(CacheableEADataset[DataFrameType]):
 
     # avoid triggering dask compute
     _precalc_ds_statistics = {
-        "starwars-swg": dict(
-            rel_triples_left=6675247,
-            rel_triples_right=178085,
-            attr_triples_left=1570786,
-            attr_triples_right=76269,
-            ent_links=1096,
-            folds=None,
-            property_links=20,
-            class_links=5,
+        "starwars-swg": (
+            DatasetStatistics(
+                rel_triples=6675247,
+                attr_triples=1570786,
+                entities=536869,
+                relations=561,
+                properties=603,
+                literals=622454,
+            ),
+            DatasetStatistics(
+                rel_triples=178085,
+                attr_triples=76269,
+                entities=47692,
+                relations=50,
+                properties=146,
+                literals=32765,
+            ),
+            1096,
         ),
-        "starwars-swtor": dict(
-            rel_triples_left=6675247,
-            rel_triples_right=105543,
-            attr_triples_left=1570786,
-            attr_triples_right=40605,
-            ent_links=1358,
-            folds=None,
-            property_links=56,
-            class_links=15,
+        "starwars-swtor": (
+            DatasetStatistics(
+                rel_triples=6675247,
+                attr_triples=1570786,
+                entities=536869,
+                relations=561,
+                properties=603,
+                literals=622454,
+            ),
+            DatasetStatistics(
+                rel_triples=105543,
+                attr_triples=40605,
+                entities=22791,
+                relations=137,
+                properties=346,
+                literals=16984,
+            ),
+            1358,
         ),
-        "marvelcinematicuniverse-marvel": dict(
-            rel_triples_left=1094598,
-            rel_triples_right=5152898,
-            attr_triples_left=130517,
-            attr_triples_right=1580468,
-            ent_links=1654,
-            folds=None,
-            property_links=11,
-            class_links=2,
+        "marvelcinematicuniverse-marvel": (
+            DatasetStatistics(
+                rel_triples=1094598,
+                attr_triples=130517,
+                entities=216033,
+                relations=130,
+                properties=110,
+                literals=56566,
+            ),
+            DatasetStatistics(
+                rel_triples=5152898,
+                attr_triples=1580468,
+                entities=1472619,
+                relations=63,
+                properties=127,
+                literals=749980,
+            ),
+            1654,
         ),
-        "memoryalpha-memorybeta": dict(
-            rel_triples_left=2096198,
-            rel_triples_right=2048728,
-            attr_triples_left=430730,
-            attr_triples_right=494181,
-            ent_links=9296,
-            folds=None,
-            property_links=55,
-            class_links=14,
+        "memoryalpha-memorybeta": (
+            DatasetStatistics(
+                rel_triples=2096198,
+                attr_triples=430730,
+                entities=254537,
+                relations=180,
+                properties=287,
+                literals=226110,
+            ),
+            DatasetStatistics(
+                rel_triples=2048728,
+                attr_triples=494181,
+                entities=212302,
+                relations=327,
+                properties=332,
+                literals=231196,
+            ),
+            9296,
         ),
-        "memoryalpha-stexpanded": dict(
-            rel_triples_left=2096198,
-            rel_triples_right=412179,
-            attr_triples_left=430730,
-            attr_triples_right=155207,
-            ent_links=1725,
-            folds=None,
-            property_links=41,
-            class_links=13,
+        "memoryalpha-stexpanded": (
+            DatasetStatistics(
+                rel_triples=2096198,
+                attr_triples=430730,
+                entities=254537,
+                relations=180,
+                properties=287,
+                literals=226110,
+            ),
+            DatasetStatistics(
+                rel_triples=412179,
+                attr_triples=155207,
+                entities=55402,
+                relations=133,
+                properties=194,
+                literals=70310,
+            ),
+            1725,
         ),
     }
 
@@ -257,13 +307,12 @@ class OAEI(CacheableEADataset[DataFrameType]):
     def _param_repr(self) -> str:
         return f"task={self.task}, "
 
-    @property
-    def _statistics(self) -> str:
-        this_ds_stats = self.__class__._precalc_ds_statistics[self.task]
-        stat_str = ""
-        for key, value in this_ds_stats.items():
-            stat_str += f"{key}={value}, "
-        return stat_str[:-2]  # remove last comma and space
+    def statistics(self) -> Tuple[DatasetStatistics, DatasetStatistics, int]:
+        return self.__class__._precalc_ds_statistics[self.task]
+
+    def __repr__(self) -> str:
+        base_repr = super().__repr__()[:-1]  # remove last bracket
+        return f"{base_repr}, property_links={len(self.property_links)}, class_links={len(self.class_links)})"
 
     def _pair_dfs(self, mapping_df: dd.DataFrame) -> dd.DataFrame:
         left_side_uri = (
