@@ -8,6 +8,7 @@ from typing import (
     Any,
     Dict,
     Generic,
+    Iterable,
     Literal,
     Mapping,
     Optional,
@@ -26,7 +27,14 @@ from pystow.utils import read_zipfile_csv
 from slugify import slugify
 
 from .dask import read_dask_df_archive_csv
-from .typing import BACKEND_LITERAL, COLUMNS, EA_SIDES
+from .typing import (
+    BACKEND_LITERAL,
+    COLUMNS,
+    EA_SIDES,
+    LABEL_HEAD,
+    LABEL_RELATION,
+    LABEL_TAIL,
+)
 from .utils import fix_dataclass_init_docs
 
 BASE_DATASET_KEY = "sylloge"
@@ -40,6 +48,20 @@ if TYPE_CHECKING:
     import dask.dataframe as dd
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class DatasetStatistics:
+    rel_triples: int
+    attr_triples: int
+    entities: int
+    relations: int
+    properties: int
+    literals: int
+
+    @property
+    def triples(self) -> int:
+        return self.rel_triples + self.attr_triples
 
 
 @fix_dataclass_init_docs
@@ -134,20 +156,50 @@ class EADataset(Generic[DataFrameType]):
         assert isinstance(name, str)  # for mypy
         return slugify(name, separator="_")
 
+    def _statistics_side(self, left: bool) -> DatasetStatistics:
+        if left:
+            attr_triples = self.attr_triples_left
+            rel_triples = self.rel_triples_left
+        else:
+            attr_triples = self.attr_triples_right
+            rel_triples = self.rel_triples_right
+        num_attr_triples = len(attr_triples)
+        num_rel_triples = len(rel_triples)
+        num_entities = len(
+            set(attr_triples[LABEL_HEAD]).union(
+                set(rel_triples[LABEL_HEAD]).union(set(rel_triples[LABEL_TAIL]))
+            )
+        )
+        num_literals = len(set(attr_triples[LABEL_TAIL]))
+        num_relations = len(set(rel_triples[LABEL_RELATION]))
+        num_properties = len(set(attr_triples[LABEL_RELATION]))
+        return DatasetStatistics(
+            rel_triples=num_rel_triples,
+            attr_triples=num_attr_triples,
+            entities=num_entities,
+            relations=num_relations,
+            properties=num_properties,
+            literals=num_literals,
+        )
+
+    def statistics(self) -> Tuple[DatasetStatistics, DatasetStatistics, int]:
+        """Provide statistics of datasets.
+
+        :return: statistics of left dataset, statistics of right dataset and number of gold standard matches
+        """
+        return (
+            self._statistics_side(True),
+            self._statistics_side(False),
+            len(self.ent_links),
+        )
+
     @property
     def _param_repr(self) -> str:
         raise NotImplementedError
 
-    @property
-    def _statistics(self) -> str:
-        if isinstance(self.rel_triples_left, pd.DataFrame):
-            return f"rel_triples_left={len(self.rel_triples_left)}, rel_triples_right={len(self.rel_triples_right)}, attr_triples_left={len(self.attr_triples_left)}, attr_triples_right={len(self.attr_triples_right)}, ent_links={len(self.ent_links)}, folds={len(self.folds) if self.folds else None}"  # type: ignore
-        else:
-            unknown = "unknown_len"
-            return f"rel_triples_left={unknown}, rel_triples_right={unknown}, attr_triples_left={unknown}, attr_triples_right={unknown}, ent_links={unknown}, folds={unknown if self.folds else None}"
-
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(backend={self.backend}, {self._param_repr}{self._statistics})"
+        left_ds_stats, right_ds_stats, num_ent_links = self.statistics()
+        return f"{self.__class__.__name__}(backend={self.backend}, {self._param_repr}rel_triples_left={left_ds_stats.rel_triples}, rel_triples_right={right_ds_stats.rel_triples}, attr_triples_left={left_ds_stats.attr_triples}, attr_triples_right={right_ds_stats.attr_triples}, ent_links={num_ent_links}, folds={len(self.folds) if self.folds else None})"
 
     def _additional_backend_handling(self, backend: BACKEND_LITERAL):
         pass
@@ -675,3 +727,64 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset):
             )
             folds.append(TrainTestValSplit(train=train, test=test, val=val))
         return {**super().initial_read(backend=backend), **dict(folds=folds)}
+
+
+def create_statistics_df(
+    datasets: Iterable[EADataset], seperate_attribute_relations: bool = True
+):
+    rows = []
+    triples_col = (
+        ["Relation Triples", "Attribute Triples"]
+        if seperate_attribute_relations
+        else ["Triples"]
+    )
+    index_cols = ["Dataset family", "Task Name", "Dataset Name"]
+    columns = [
+        *index_cols,
+        "Entities",
+        *triples_col,
+        "Relations",
+        "Properties",
+        "Literals",
+        "Matches",
+    ]
+    for ds in datasets:
+        ds_family = str(ds.__class__.__name__).split(".")[-1]
+        ds_left_stats, ds_right_stats, num_ent_links = ds.statistics()
+        for ds_side, ds_side_name in zip(
+            [ds_left_stats, ds_right_stats], ds.dataset_names
+        ):
+            if seperate_attribute_relations:
+                rows.append(
+                    [
+                        ds_family,
+                        ds.canonical_name,
+                        ds_side_name,
+                        ds_side.entities,
+                        ds_side.rel_triples,
+                        ds_side.attr_triples,
+                        ds_side.relations,
+                        ds_side.properties,
+                        ds_side.literals,
+                        num_ent_links,
+                    ]
+                )
+            else:
+                rows.append(
+                    [
+                        ds_family,
+                        ds.canonical_name,
+                        ds_side_name,
+                        ds_side.entities,
+                        ds_side.triples,
+                        ds_side.relations,
+                        ds_side.properties,
+                        ds_side.literals,
+                        num_ent_links,
+                    ]
+                )
+    df = pd.DataFrame(
+        rows,
+        columns=columns,
+    )
+    return df.set_index(index_cols)
