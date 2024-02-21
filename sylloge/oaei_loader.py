@@ -117,7 +117,7 @@ class OAEI(CacheableEADataset[DataFrameType]):
     _CLASS_LINKS_PATH: str = "class_links_parquet"
     _PROPERTY_LINKS_PATH: str = "property_links_parquet"
 
-    _TASK_URLS: MappingProxyType[OAEI_TASK_NAME, URL_SHA512_HASH] = MappingProxyType(
+    _TASK_URLS = MappingProxyType(
         {
             "starwars-swg": URL_SHA512_HASH(
                 "https://cloud.scadsai.uni-leipzig.de/index.php/s/WzRxffgoq2qqn7q/download/starwars-swg.tar.gz",

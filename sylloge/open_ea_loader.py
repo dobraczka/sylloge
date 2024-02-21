@@ -44,9 +44,7 @@ class OpenEA(ZipEADatasetWithPreSplitFolds):
         "9f86fbee94e1e78a7ee056dd69df1ce3fc210ae07dc64955ad2bfda7450545ef"
     )
 
-    _GRAPH_PAIR_TO_DS_NAMES: MappingProxyType[
-        GraphPair, Tuple[str, str]
-    ] = MappingProxyType(
+    _GRAPH_PAIR_TO_DS_NAMES = MappingProxyType(
         {
             "D_W": ("DBpedia", "Wikidata"),
             "D_Y": ("DBpedia", "YAGO"),
