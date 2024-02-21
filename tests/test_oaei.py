@@ -23,7 +23,7 @@ def test_oaei_mock(task, backend, mocker, tmp_path):
         "sylloge.oaei_loader.read_dask_bag_from_archive_text",
         rm.mock_read_dask_bag_from_archive_text,
     )
-    for (use_cache, cache_exists) in [(False, False), (True, False), (True, True)]:
+    for use_cache, cache_exists in [(False, False), (True, False), (True, True)]:
         if cache_exists:
             # ensure this method doesn't get called
             mocker.patch(

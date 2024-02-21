@@ -29,65 +29,58 @@ pyarrow = "*"
 
 [tool.poetry.group.dev.dependencies]
 ipdb = "^0.13.9"
-mypy = "^0.960"
-pytest = "^7.1.2"
-pytest-cov = "^3.0.0"
-pyproject-flake8 = "^0.0.1a4"
-flake8-eradicate = "^1.2.1"
-flake8-isort = "^4.1.1"
-flake8-debugger = "^4.1.2"
-flake8-comprehensions = "^3.10.0"
-flake8-print = "^5.0.0"
-nox-poetry = "^1.0.0"
-black = "^22.3.0"
-pytest-mock = "^3.7.0"
-pydocstyle = "^6.1.1"
-flake8-bugbear = "^22.7.1"
-darglint = "^1.8.1"
+ruff = "^0.2.1"
+mypy = "^1.8.0"
+pytest = "^8.0.0"
+pytest-cov = "^4.1.0"
+nox-poetry = "^1.0.3"
+pytest-mock = "^3.12.0"
+toml = "^0.10.2"
+pyroma = "^4.2"
 strawman = "*"
+
 
 
 [tool.poetry.extras]
 docs = ["sphinx", "insegel", "sphinx-automodapi", "sphinx-autodoc-typehints"]
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+requires = [
+  "poetry-core>=1",
+]
 
-[tool.flake8]
-ignore = "E203, E501, W503, C408, D107, B018, I003"
-max-line-length = 88
-count = "true"
-show-source = "true"
-statistics = "true"
-strictness = "short"
-docstring_style = "sphinx"
-per-file-ignores = "tests/*: DAR002"
-
-[tool.black]
+[tool.ruff]
+# Same as Black.
 line-length = 88
-target-version = ["py37", "py38", "py39", "py310"]
-include = '\.pyi?$'
-exclude = '''
-/(
-    \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | _build
-  | buck-out
-  | build
-  | dist
-)/
-'''
+indent-width = 4
 
-[tool.isort]
-profile = "black"
-multi_line_output = 3
-line_length = 88
-include_trailing_comma = true
-reverse_relative = true
+# Assume Python 3.8
+target-version = "py38"
+
+[tool.ruff.lint]
+ignore = ["E111", "E114", "E117", "E501", "D1", "D203", "D213", "D206", "D300", "Q000", "Q001", "Q002", "Q003", "COM812", "COM819", "ISC001","ISC002", "B905", "W191", "PLR0913", "PLR0912", "PLR2004"]
+select = ["B", "C", "E", "F", "W", "B", "I", "D", "UP", "A", "C4", "T10", "ICN", "PIE", "PYI", "PT", "RET", "SIM", "ERA", "PD", "PGH", "PL", "NPY", "PERF", "RUF"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 18
+
+[tool.ruff.lint.pyupgrade]
+# Preserve types, even if a file imports `from __future__ import annotations`.
+keep-runtime-typing = true
+
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+
+# Like Black, automatically detect the appropriate line ending.
+line-ending = "auto"
 
 [tool.pytest.ini_options]
 markers = [

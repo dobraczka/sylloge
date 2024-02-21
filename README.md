@@ -82,7 +82,7 @@ After the initial read datasets are cached using this format. The `cache_path` c
 Some datasets come with pre-determined splits:
 
 ```bash
-tree ~/.data/sylloge/open_ea/cached/D_W_15K_V1 
+tree ~/.data/sylloge/open_ea/cached/D_W_15K_V1
 ├── attr_triples_left_parquet
 ├── attr_triples_right_parquet
 ├── dataset_names.txt
@@ -131,7 +131,7 @@ tree ~/.data/sylloge/oaei/cached/starwars_swg
 Installation
 ============
 ```bash
-pip install sylloge 
+pip install sylloge
 ```
 
 Datasets

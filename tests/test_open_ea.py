@@ -11,7 +11,7 @@ from sylloge.open_ea_loader import D_W, D_Y, EN_DE, EN_FR, SIZE_15K, SIZE_100K, 
 
 statistics_with_params = [
     (
-        dict(graph_pair=D_W, size=SIZE_15K, version=V1),
+        {"graph_pair": D_W, "size": SIZE_15K, "version": V1},
         DatasetStatistics(
             num_rel_triples_left=38265,
             num_rel_triples_right=42746,
@@ -21,7 +21,7 @@ statistics_with_params = [
         ),
     ),
     (
-        dict(graph_pair=D_W, size=SIZE_15K, version=V2),
+        {"graph_pair": D_W, "size": SIZE_15K, "version": V2},
         DatasetStatistics(
             num_rel_triples_left=73983,
             num_rel_triples_right=83365,
@@ -31,7 +31,7 @@ statistics_with_params = [
         ),
     ),
     (
-        dict(graph_pair=D_Y, size=SIZE_15K, version=V1),
+        {"graph_pair": D_Y, "size": SIZE_15K, "version": V1},
         DatasetStatistics(
             num_rel_triples_left=30291,
             num_rel_triples_right=26638,
@@ -41,7 +41,7 @@ statistics_with_params = [
         ),
     ),
     (
-        dict(graph_pair=D_Y, size=SIZE_15K, version=V2),
+        {"graph_pair": D_Y, "size": SIZE_15K, "version": V2},
         DatasetStatistics(
             num_rel_triples_left=68063,
             num_rel_triples_right=60970,
@@ -51,7 +51,7 @@ statistics_with_params = [
         ),
     ),
     (
-        dict(graph_pair=EN_DE, size=SIZE_15K, version=V1),
+        {"graph_pair": EN_DE, "size": SIZE_15K, "version": V1},
         DatasetStatistics(
             num_rel_triples_left=47676,
             num_rel_triples_right=50419,
@@ -61,7 +61,7 @@ statistics_with_params = [
         ),
     ),
     (
-        dict(graph_pair=EN_DE, size=SIZE_15K, version=V2),
+        {"graph_pair": EN_DE, "size": SIZE_15K, "version": V2},
         DatasetStatistics(
             num_rel_triples_left=84867,
             num_rel_triples_right=92632,
@@ -71,7 +71,7 @@ statistics_with_params = [
         ),
     ),
     (
-        dict(graph_pair=EN_FR, size=SIZE_15K, version=V1),
+        {"graph_pair": EN_FR, "size": SIZE_15K, "version": V1},
         DatasetStatistics(
             num_rel_triples_left=47334,
             num_rel_triples_right=40864,
@@ -81,7 +81,7 @@ statistics_with_params = [
         ),
     ),
     (
-        dict(graph_pair=EN_FR, size=SIZE_15K, version=V2),
+        {"graph_pair": EN_FR, "size": SIZE_15K, "version": V2},
         DatasetStatistics(
             num_rel_triples_left=96318,
             num_rel_triples_right=80112,
@@ -91,7 +91,7 @@ statistics_with_params = [
         ),
     ),
     (
-        dict(graph_pair=D_W, size=SIZE_100K, version=V1),
+        {"graph_pair": D_W, "size": SIZE_100K, "version": V1},
         DatasetStatistics(
             num_rel_triples_left=293990,
             num_rel_triples_right=251708,
@@ -101,7 +101,7 @@ statistics_with_params = [
         ),
     ),
     (
-        dict(graph_pair=D_W, size=SIZE_100K, version=V2),
+        {"graph_pair": D_W, "size": SIZE_100K, "version": V2},
         DatasetStatistics(
             num_rel_triples_left=616457,
             num_rel_triples_right=588203,
@@ -111,7 +111,7 @@ statistics_with_params = [
         ),
     ),
     (
-        dict(graph_pair=D_Y, size=SIZE_100K, version=V1),
+        {"graph_pair": D_Y, "size": SIZE_100K, "version": V1},
         DatasetStatistics(
             num_rel_triples_left=294188,
             num_rel_triples_right=400518,
@@ -121,7 +121,7 @@ statistics_with_params = [
         ),
     ),
     (
-        dict(graph_pair=D_Y, size=SIZE_100K, version=V2),
+        {"graph_pair": D_Y, "size": SIZE_100K, "version": V2},
         DatasetStatistics(
             num_rel_triples_left=576547,
             num_rel_triples_right=865265,
@@ -131,7 +131,7 @@ statistics_with_params = [
         ),
     ),
     (
-        dict(graph_pair=EN_DE, size=SIZE_100K, version=V1),
+        {"graph_pair": EN_DE, "size": SIZE_100K, "version": V1},
         DatasetStatistics(
             num_rel_triples_left=335359,
             num_rel_triples_right=336240,
@@ -141,7 +141,7 @@ statistics_with_params = [
         ),
     ),
     (
-        dict(graph_pair=EN_DE, size=SIZE_100K, version=V2),
+        {"graph_pair": EN_DE, "size": SIZE_100K, "version": V2},
         DatasetStatistics(
             num_rel_triples_left=622588,
             num_rel_triples_right=629395,
@@ -151,7 +151,7 @@ statistics_with_params = [
         ),
     ),
     (
-        dict(graph_pair=EN_FR, size=SIZE_100K, version=V1),
+        {"graph_pair": EN_FR, "size": SIZE_100K, "version": V1},
         DatasetStatistics(
             num_rel_triples_left=309607,
             num_rel_triples_right=258285,
@@ -161,7 +161,7 @@ statistics_with_params = [
         ),
     ),
     (
-        dict(graph_pair=EN_FR, size=SIZE_100K, version=V2),
+        {"graph_pair": EN_FR, "size": SIZE_100K, "version": V2},
         DatasetStatistics(
             num_rel_triples_left=649902,
             num_rel_triples_right=561391,
@@ -173,8 +173,8 @@ statistics_with_params = [
 ]
 
 
-@pytest.mark.slow
-@pytest.mark.parametrize("params,statistic", statistics_with_params)
+@pytest.mark.slow()
+@pytest.mark.parametrize(("params", "statistic"), statistics_with_params)
 def test_open_ea(params: Dict, statistic: DatasetStatistics):
     ds = OpenEA(**params, use_cache=False)
     assert len(ds.rel_triples_left) == statistic.num_rel_triples_left
@@ -195,7 +195,7 @@ def test_open_ea(params: Dict, statistic: DatasetStatistics):
             assert len(fold.val) == 10000
 
 
-@pytest.mark.parametrize("params,statistic", statistics_with_params)
+@pytest.mark.parametrize(("params", "statistic"), statistics_with_params)
 @pytest.mark.parametrize("backend", ["pandas", "dask"])
 def test_open_ea_mock(
     params: Dict, statistic: DatasetStatistics, backend, mocker, tmp_path
@@ -207,7 +207,7 @@ def test_open_ea_mock(
     mocker.patch(
         "sylloge.base.read_dask_df_archive_csv", rm.mock_read_dask_df_archive_csv
     )
-    for (use_cache, cache_exists) in [(False, False), (True, False), (True, True)]:
+    for use_cache, cache_exists in [(False, False), (True, False), (True, True)]:
         if cache_exists:
             # ensure these methods don't get called
             mocker.patch("sylloge.base.read_zipfile_csv", rm.assert_not_called)

@@ -2,8 +2,8 @@
 import logging
 import pathlib
 import typing
-from collections import namedtuple
-from typing import Any, Dict, Literal, Optional, Tuple, Union
+from types import MappingProxyType
+from typing import Any, Dict, Literal, NamedTuple, Optional, Tuple, Union
 
 import dask.dataframe as dd
 import pandas as pd
@@ -43,7 +43,10 @@ REL_ATTR_LITERAL = Literal["rel", "attr"]
 reflinetype = pd.CategoricalDtype(categories=typing.get_args(REFLINE_TYPE_LITERAL))
 relattrlinetype = pd.CategoricalDtype(categories=typing.get_args(REL_ATTR_LITERAL))
 
-URL_SHA512_HASH = namedtuple("URL_SHA512_HASH", ["url", "hash"])
+
+class URL_SHA512_HASH(NamedTuple):
+    url: str
+    hash_val: str
 
 
 def parse_ref_line(line: str) -> Tuple[str, str, str, REFLINE_TYPE_LITERAL]:
@@ -114,127 +117,131 @@ class OAEI(CacheableEADataset[DataFrameType]):
     _CLASS_LINKS_PATH: str = "class_links_parquet"
     _PROPERTY_LINKS_PATH: str = "property_links_parquet"
 
-    _TASK_URLS: Dict[OAEI_TASK_NAME, URL_SHA512_HASH] = {
-        "starwars-swg": URL_SHA512_HASH(
-            "https://cloud.scadsai.uni-leipzig.de/index.php/s/WzRxffgoq2qqn7q/download/starwars-swg.tar.gz",
-            "ac6c1ca1b374e24fbeaf368a4ecf5254c54be38d0cbc1880815310ffa534c2266fa0da840014facf5fff430f777ef342a2d432fe00cf6fc14a0a12419d6966be",
-        ),
-        "starwars-swtor": URL_SHA512_HASH(
-            "https://cloud.scadsai.uni-leipzig.de/index.php/s/CcG6tANX4JqacNY/download/starwars-swtor.tar.gz",
-            "6b7913c5613bbc8c2aa849936d8b86c4613b73cebd06f8ee1c5e26f3605f95e61115a8a4d2d1399dbeb047579440899e9ecfce31f8c95c6013260dd3785cac80",
-        ),
-        "marvelcinematicuniverse-marvel": URL_SHA512_HASH(
-            "https://cloud.scadsai.uni-leipzig.de/index.php/s/CH3NNin95BGjgb3/download/marvelcinematicuniverse-marvel.tar.gz",
-            "d67936030c5ada48e6415774210527af51bf964828edd3f18beed51146ea9f70425cb760d073803189c4079dc68a4e39168fb1105c42fa6e82b790eb01e4a207",
-        ),
-        "memoryalpha-memorybeta": URL_SHA512_HASH(
-            "https://cloud.scadsai.uni-leipzig.de/index.php/s/d6TYKFfDKxZEpiy/download/memoryalpha-memorybeta.tar.gz",
-            "afb0a06225afcc2ae6edf5dcd513e48d4159e3d9bf94fc3cda6495a8c98a26fbc369413c587daec09e6ff7d045bf061a16ab8b65af4e22d0c91113390dc5d8d3",
-        ),
-        "memoryalpha-stexpanded": URL_SHA512_HASH(
-            "https://cloud.scadsai.uni-leipzig.de/index.php/s/wSaRamAT5R5ieFZ/download/memoryalpha-stexpanded.tar.gz",
-            "3d6f93c46425b4cb06f5a532601af9ee0a9fcdc3928709fa0ac66617099a27e26c244c024ae097274173cf2c910b045ea412fb225f51323eb7cdad86ad2461cc",
-        ),
-    }
+    _TASK_URLS: MappingProxyType[OAEI_TASK_NAME, URL_SHA512_HASH] = MappingProxyType(
+        {
+            "starwars-swg": URL_SHA512_HASH(
+                "https://cloud.scadsai.uni-leipzig.de/index.php/s/WzRxffgoq2qqn7q/download/starwars-swg.tar.gz",
+                "ac6c1ca1b374e24fbeaf368a4ecf5254c54be38d0cbc1880815310ffa534c2266fa0da840014facf5fff430f777ef342a2d432fe00cf6fc14a0a12419d6966be",
+            ),
+            "starwars-swtor": URL_SHA512_HASH(
+                "https://cloud.scadsai.uni-leipzig.de/index.php/s/CcG6tANX4JqacNY/download/starwars-swtor.tar.gz",
+                "6b7913c5613bbc8c2aa849936d8b86c4613b73cebd06f8ee1c5e26f3605f95e61115a8a4d2d1399dbeb047579440899e9ecfce31f8c95c6013260dd3785cac80",
+            ),
+            "marvelcinematicuniverse-marvel": URL_SHA512_HASH(
+                "https://cloud.scadsai.uni-leipzig.de/index.php/s/CH3NNin95BGjgb3/download/marvelcinematicuniverse-marvel.tar.gz",
+                "d67936030c5ada48e6415774210527af51bf964828edd3f18beed51146ea9f70425cb760d073803189c4079dc68a4e39168fb1105c42fa6e82b790eb01e4a207",
+            ),
+            "memoryalpha-memorybeta": URL_SHA512_HASH(
+                "https://cloud.scadsai.uni-leipzig.de/index.php/s/d6TYKFfDKxZEpiy/download/memoryalpha-memorybeta.tar.gz",
+                "afb0a06225afcc2ae6edf5dcd513e48d4159e3d9bf94fc3cda6495a8c98a26fbc369413c587daec09e6ff7d045bf061a16ab8b65af4e22d0c91113390dc5d8d3",
+            ),
+            "memoryalpha-stexpanded": URL_SHA512_HASH(
+                "https://cloud.scadsai.uni-leipzig.de/index.php/s/wSaRamAT5R5ieFZ/download/memoryalpha-stexpanded.tar.gz",
+                "3d6f93c46425b4cb06f5a532601af9ee0a9fcdc3928709fa0ac66617099a27e26c244c024ae097274173cf2c910b045ea412fb225f51323eb7cdad86ad2461cc",
+            ),
+        }
+    )
 
     # avoid triggering dask compute
-    _precalc_ds_statistics = {
-        "starwars-swg": (
-            DatasetStatistics(
-                rel_triples=6675247,
-                attr_triples=1570786,
-                entities=536869,
-                relations=561,
-                properties=603,
-                literals=622454,
+    _precalc_ds_statistics = MappingProxyType(
+        {
+            "starwars-swg": (
+                DatasetStatistics(
+                    rel_triples=6675247,
+                    attr_triples=1570786,
+                    entities=536869,
+                    relations=561,
+                    properties=603,
+                    literals=622454,
+                ),
+                DatasetStatistics(
+                    rel_triples=178085,
+                    attr_triples=76269,
+                    entities=47692,
+                    relations=50,
+                    properties=146,
+                    literals=32765,
+                ),
+                1096,
             ),
-            DatasetStatistics(
-                rel_triples=178085,
-                attr_triples=76269,
-                entities=47692,
-                relations=50,
-                properties=146,
-                literals=32765,
+            "starwars-swtor": (
+                DatasetStatistics(
+                    rel_triples=6675247,
+                    attr_triples=1570786,
+                    entities=536869,
+                    relations=561,
+                    properties=603,
+                    literals=622454,
+                ),
+                DatasetStatistics(
+                    rel_triples=105543,
+                    attr_triples=40605,
+                    entities=22791,
+                    relations=137,
+                    properties=346,
+                    literals=16984,
+                ),
+                1358,
             ),
-            1096,
-        ),
-        "starwars-swtor": (
-            DatasetStatistics(
-                rel_triples=6675247,
-                attr_triples=1570786,
-                entities=536869,
-                relations=561,
-                properties=603,
-                literals=622454,
+            "marvelcinematicuniverse-marvel": (
+                DatasetStatistics(
+                    rel_triples=1094598,
+                    attr_triples=130517,
+                    entities=216033,
+                    relations=130,
+                    properties=110,
+                    literals=56566,
+                ),
+                DatasetStatistics(
+                    rel_triples=5152898,
+                    attr_triples=1580468,
+                    entities=1472619,
+                    relations=63,
+                    properties=127,
+                    literals=749980,
+                ),
+                1654,
             ),
-            DatasetStatistics(
-                rel_triples=105543,
-                attr_triples=40605,
-                entities=22791,
-                relations=137,
-                properties=346,
-                literals=16984,
+            "memoryalpha-memorybeta": (
+                DatasetStatistics(
+                    rel_triples=2096198,
+                    attr_triples=430730,
+                    entities=254537,
+                    relations=180,
+                    properties=287,
+                    literals=226110,
+                ),
+                DatasetStatistics(
+                    rel_triples=2048728,
+                    attr_triples=494181,
+                    entities=212302,
+                    relations=327,
+                    properties=332,
+                    literals=231196,
+                ),
+                9296,
             ),
-            1358,
-        ),
-        "marvelcinematicuniverse-marvel": (
-            DatasetStatistics(
-                rel_triples=1094598,
-                attr_triples=130517,
-                entities=216033,
-                relations=130,
-                properties=110,
-                literals=56566,
+            "memoryalpha-stexpanded": (
+                DatasetStatistics(
+                    rel_triples=2096198,
+                    attr_triples=430730,
+                    entities=254537,
+                    relations=180,
+                    properties=287,
+                    literals=226110,
+                ),
+                DatasetStatistics(
+                    rel_triples=412179,
+                    attr_triples=155207,
+                    entities=55402,
+                    relations=133,
+                    properties=194,
+                    literals=70310,
+                ),
+                1725,
             ),
-            DatasetStatistics(
-                rel_triples=5152898,
-                attr_triples=1580468,
-                entities=1472619,
-                relations=63,
-                properties=127,
-                literals=749980,
-            ),
-            1654,
-        ),
-        "memoryalpha-memorybeta": (
-            DatasetStatistics(
-                rel_triples=2096198,
-                attr_triples=430730,
-                entities=254537,
-                relations=180,
-                properties=287,
-                literals=226110,
-            ),
-            DatasetStatistics(
-                rel_triples=2048728,
-                attr_triples=494181,
-                entities=212302,
-                relations=327,
-                properties=332,
-                literals=231196,
-            ),
-            9296,
-        ),
-        "memoryalpha-stexpanded": (
-            DatasetStatistics(
-                rel_triples=2096198,
-                attr_triples=430730,
-                entities=254537,
-                relations=180,
-                properties=287,
-                literals=226110,
-            ),
-            DatasetStatistics(
-                rel_triples=412179,
-                attr_triples=155207,
-                entities=55402,
-                relations=133,
-                properties=194,
-                literals=70310,
-            ),
-            1725,
-        ),
-    }
+        }
+    )
 
     def __init__(
         self,
@@ -278,7 +285,7 @@ class OAEI(CacheableEADataset[DataFrameType]):
         archive_path = str(
             OAEI_MODULE.ensure(
                 url=archive_url,
-                download_kwargs=dict(hexdigests=dict(sha512=sha512hash)),
+                download_kwargs=dict(hexdigests=dict(sha512=sha512hash)),  # noqa: C408
             )
         )
         entity_mapping_df, property_mapping_df, class_mapping_df = self._mapping_dfs(
@@ -291,13 +298,13 @@ class OAEI(CacheableEADataset[DataFrameType]):
         # because of possible transforming
         self.property_links = property_mapping_df
         self.class_links = class_mapping_df
-        return dict(
-            rel_triples_left=left_rel,
-            rel_triples_right=right_rel,
-            attr_triples_left=left_attr,
-            attr_triples_right=right_attr,
-            ent_links=entity_mapping_df,
-        )
+        return {
+            "rel_triples_left": left_rel,
+            "rel_triples_right": right_rel,
+            "attr_triples_left": left_attr,
+            "attr_triples_right": right_attr,
+            "ent_links": entity_mapping_df,
+        }
 
     @property
     def _canonical_name(self) -> str:
@@ -348,7 +355,7 @@ class OAEI(CacheableEADataset[DataFrameType]):
                 ),
             }
         )
-        df = (
+        all_mapping_df = (
             read_dask_bag_from_archive_text(
                 archive_path,
                 inner_path=f"{self.task}/ref-{self.task}.nt",
@@ -359,9 +366,11 @@ class OAEI(CacheableEADataset[DataFrameType]):
             .to_dataframe(schema_df)
         )
 
-        entity_mapping_df = df[df[LINE_TYPE_COL] == "entity"]
-        property_mapping_df = df[df[LINE_TYPE_COL] == "property"]
-        class_mapping_df = df[df[LINE_TYPE_COL] == "class"]
+        entity_mapping_df = all_mapping_df[all_mapping_df[LINE_TYPE_COL] == "entity"]
+        property_mapping_df = all_mapping_df[
+            all_mapping_df[LINE_TYPE_COL] == "property"
+        ]
+        class_mapping_df = all_mapping_df[all_mapping_df[LINE_TYPE_COL] == "class"]
         return (
             self._pair_dfs(entity_mapping_df),
             self._pair_dfs(property_mapping_df),
@@ -385,7 +394,7 @@ class OAEI(CacheableEADataset[DataFrameType]):
                 ),
             }
         )
-        df = (
+        triple_df = (
             read_dask_bag_from_archive_text(
                 archive_path, inner_path=f"{self.task}/{task_side}.nt", protocol="tar"
             )
@@ -393,8 +402,8 @@ class OAEI(CacheableEADataset[DataFrameType]):
             .to_dataframe(schema_df)
         )
         return (
-            df[df[REL_ATTR_COL] == "attr"][COLUMNS],
-            df[df[REL_ATTR_COL] == "rel"][COLUMNS],
+            triple_df[triple_df[REL_ATTR_COL] == "attr"][COLUMNS],
+            triple_df[triple_df[REL_ATTR_COL] == "rel"][COLUMNS],
         )
 
     def to_parquet(self, path: Union[str, pathlib.Path], **kwargs):

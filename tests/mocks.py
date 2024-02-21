@@ -1,8 +1,9 @@
-from typing import Iterable
+from typing import Iterable, Optional
 
 import dask.bag as db
 import dask.dataframe as dd
 import pandas as pd
+import pytest
 from moviegraphbenchmark.loading import ERData, Fold
 from strawman import dummy_df, dummy_triples
 from util import DatasetStatistics
@@ -12,7 +13,10 @@ from sylloge.typing import EA_SIDE_LEFT, EA_SIDE_RIGHT, EA_SIDES
 
 class ResourceMocker:
     def __init__(
-        self, statistic: DatasetStatistics = None, fraction: float = 1.0, seed: int = 17
+        self,
+        statistic: Optional[DatasetStatistics] = None,
+        fraction: float = 1.0,
+        seed: int = 17,
     ):
         if statistic is None:
             self.statistic = DatasetStatistics(
@@ -58,33 +62,34 @@ class ResourceMocker:
                 entity_prefix=EA_SIDE_LEFT,
                 seed=self.seed,
             )
-        elif "rel_triples_2" in inner_path:
+        if "rel_triples_2" in inner_path:
             return dummy_triples(
                 int(self.statistic.num_rel_triples_right * self.fraction),
                 entity_prefix=EA_SIDE_RIGHT,
                 seed=self.seed,
             )
-        elif "attr_triples_1" in inner_path:
+        if "attr_triples_1" in inner_path:
             return dummy_triples(
                 int(self.statistic.num_attr_triples_left * self.fraction),
                 entity_prefix=EA_SIDE_LEFT,
                 relation_triples=False,
                 seed=self.seed,
             )
-        elif "attr_triples_2" in inner_path:
+        if "attr_triples_2" in inner_path:
             return dummy_triples(
                 int(self.statistic.num_attr_triples_right * self.fraction),
                 entity_prefix=EA_SIDE_RIGHT,
                 relation_triples=False,
                 seed=self.seed,
             )
-        elif "_links" in inner_path:
+        if "_links" in inner_path:
             return dummy_df(
                 shape=(int(self.statistic.num_ent_links * self.fraction), 2),
                 content_length=100,
                 columns=list(EA_SIDES),
                 seed=self.seed,
             )
+        raise ValueError("Unknown case!")
 
     def mock_read_dask_bag_from_archive_text(
         self, archive_path: str, inner_path: str, protocol: str
@@ -124,20 +129,19 @@ class ResourceMocker:
                     ),
                 ]
             )
-        else:
-            return db.from_sequence(
-                [
-                    (
-                        "<http://dbkwik.webdatacommons.org/starwars.wikia.com/resource/Charis_system> <http://purl.org/dc/terms/subject> <http://dbkwik.webdatacommons.org/starwars.wikia.com/resource/Category:Kathol_sector_star_systems> .\n"
-                    ),
-                    (
-                        "<http://dbkwik.webdatacommons.org/starwars.wikia.com/resource/Catalyst:_A_Rogue_One_Novel> <http://dbkwik.webdatacommons.org/starwars.wikia.com/property/miscellanea> <http://dbkwik.webdatacommons.org/starwars.wikia.com/resource/Methane> .\n"
-                    ),
-                    (
-                        "<http://dbkwik.webdatacommons.org/starwars.wikia.com/resource/ConJob%27s_Trifles> <http://dbkwik.webdatacommons.org/ontology/wikiPageWikiLink> <http://dbkwik.webdatacommons.org/starwars.wikia.com/resource/Hydroponic_garden> .\n"
-                    ),
-                ]
-            )
+        return db.from_sequence(
+            [
+                (
+                    "<http://dbkwik.webdatacommons.org/starwars.wikia.com/resource/Charis_system> <http://purl.org/dc/terms/subject> <http://dbkwik.webdatacommons.org/starwars.wikia.com/resource/Category:Kathol_sector_star_systems> .\n"
+                ),
+                (
+                    "<http://dbkwik.webdatacommons.org/starwars.wikia.com/resource/Catalyst:_A_Rogue_One_Novel> <http://dbkwik.webdatacommons.org/starwars.wikia.com/property/miscellanea> <http://dbkwik.webdatacommons.org/starwars.wikia.com/resource/Methane> .\n"
+                ),
+                (
+                    "<http://dbkwik.webdatacommons.org/starwars.wikia.com/resource/ConJob%27s_Trifles> <http://dbkwik.webdatacommons.org/ontology/wikiPageWikiLink> <http://dbkwik.webdatacommons.org/starwars.wikia.com/resource/Hydroponic_garden> .\n"
+                ),
+            ]
+        )
 
     def mock_read_dask_df_archive_csv(self, inner_path: str, **kwargs) -> dd.DataFrame:
         return dd.from_pandas(
@@ -145,4 +149,4 @@ class ResourceMocker:
         )
 
     def assert_not_called(self, **kwargs):
-        assert False
+        pytest.fail("Assert should have called!")

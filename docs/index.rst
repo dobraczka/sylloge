@@ -73,7 +73,7 @@ Some datasets come with pre-determined splits:
 
 .. code-block:: bash
 
-    tree ~/.data/sylloge/open_ea/cached/D_W_15K_V1 
+    tree ~/.data/sylloge/open_ea/cached/D_W_15K_V1
     ├── attr_triples_left_parquet
     ├── attr_triples_right_parquet
     ├── dataset_names.txt
@@ -124,8 +124,8 @@ some don't:
 You can install sylloge via pip:
 
 .. code-block:: bash
-  
-  pip install sylloge 
+
+  pip install sylloge
 
 
 

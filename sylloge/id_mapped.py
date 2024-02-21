@@ -9,7 +9,7 @@ from .utils import fix_dataclass_init_docs
 
 
 def enhance_mapping(
-    labels: Iterable, mapping: Mapping[str, int] = None
+    labels: Iterable, mapping: Optional[Mapping[str, int]] = None
 ) -> Dict[str, int]:
     """Map labels with given mapping and enhance mapping if unseen labels are encountered.
 
@@ -21,9 +21,9 @@ def enhance_mapping(
     new_id = len(mapping)
     enhanced_mapping = {**mapping}
     for label in labels:
-        label = str(label)
-        if label not in mapping:
-            enhanced_mapping[label] = new_id
+        label_str = str(label)
+        if label_str not in mapping:
+            enhanced_mapping[label_str] = new_id
             new_id += 1
     return enhanced_mapping
 
@@ -55,8 +55,8 @@ def perform_map(
 
 def id_map_rel_triples(
     df: pd.DataFrame,
-    entity_mapping: Dict[str, int] = None,
-    rel_mapping: Dict[str, int] = None,
+    entity_mapping: Optional[Dict[str, int]] = None,
+    rel_mapping: Optional[Dict[str, int]] = None,
 ) -> Tuple[np.ndarray, Dict[str, int], Dict[str, int]]:
     """Map entity and relation labels to ids and create numpy array.
 
@@ -65,7 +65,7 @@ def id_map_rel_triples(
     :param rel_mapping: already mapped relations
     :return: id-based numpy array triples, (updated) entity label to id mapping, (updated) relation label to id mapping
     """
-    triples = df.astype(str).values
+    triples = df.astype(str).to_numpy()
     heads, rels, tails = triples[:, 0], triples[:, 1], triples[:, 2]
     # sorting  ensures consistent results
     entity_labels = sorted(set(heads).union(tails))
@@ -82,8 +82,8 @@ def id_map_rel_triples(
 def _id_map_attr_triples(
     df: pd.DataFrame,
     entity_mapping: Dict[str, int],
-    attr_rel_mapping: Dict[str, int] = None,
-    attr_mapping: Dict[str, int] = None,
+    attr_rel_mapping: Optional[Dict[str, int]] = None,
+    attr_mapping: Optional[Dict[str, int]] = None,
 ) -> Tuple[np.ndarray, Dict[str, int], Dict[str, int], Dict[str, int]]:
     """Map entity, relation labels and attributes to ids and create numpy array.
 
@@ -93,7 +93,7 @@ def _id_map_attr_triples(
     :param attr_mapping: already mapped attributes
     :return: id-based numpy array triples, (updated) entity label to id mapping, (updated) relation label to id mapping, (updated) attribute to id mapping
     """
-    triples = df.astype(str).values
+    triples = df.astype(str).to_numpy()
     heads, rels, tails = triples[:, 0], triples[:, 1], triples[:, 2]
     # sorting  ensures consistent results
     entity_labels = sorted(set(heads))
@@ -117,7 +117,7 @@ def _map_links(links: pd.DataFrame, entity_mapping: Dict[str, int]) -> np.ndarra
     :param entity_mapping: label to id mapping
     :return: numpy array with ids
     """
-    tuples = links.values
+    tuples = links.to_numpy()
     entity_getter = np.vectorize(entity_mapping.get)
     return np.concatenate(
         [entity_getter(tuples[:, 0:1]), entity_getter(tuples[:, 1:2])], axis=1

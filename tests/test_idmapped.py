@@ -18,7 +18,7 @@ def _create_simple_mapping(
     return my_mapping
 
 
-@pytest.fixture
+@pytest.fixture()
 def example() -> Tuple[EADataset, Dict[str, int], Dict[str, int], Dict[str, int]]:
     seed = 42
     left_ent_num = 8

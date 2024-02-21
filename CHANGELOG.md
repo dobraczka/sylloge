@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added id mapped dataset class
-- Added canonical name property 
+- Added canonical name property
 - Added dask support
 - Added dataset names
 - Added caching functionality
@@ -34,4 +34,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.1.1]: https://github.com/dobraczka/sylloge/releases/tag/v0.1.1
 [0.2.0]: https://github.com/dobraczka/sylloge/releases/tag/v0.2.0
 [0.2.1]: https://github.com/dobraczka/sylloge/releases/tag/v0.2.1
-

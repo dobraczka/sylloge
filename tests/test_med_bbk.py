@@ -3,7 +3,7 @@ import pytest
 from sylloge import MED_BBK
 
 
-@pytest.mark.slow
+@pytest.mark.slow()
 def test_med_bbk():
     ds = MED_BBK(use_cache=False)
     assert len(ds.rel_triples_left) == 158357

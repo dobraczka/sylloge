@@ -15,33 +15,33 @@ def tests(session: Session) -> None:
 locations = ["sylloge", "tests", "noxfile.py"]
 
 
-@session(tags=["not test", "style"])  # type: ignore
+@session(tags=["not test", "style"])  # type: ignore[call-overload]
 def lint(session: Session) -> None:
-    args = session.posargs or locations
-    session.install("black", "isort")
-    session.run("black", *args)
-    session.run("isort", *args)
+    session.install("pre-commit")
+    session.run(
+        "pre-commit",
+        "run",
+        "--all-files",
+        "--hook-stage=manual",
+        *session.posargs,
+    )
 
 
-@session(tags=["not test", "style"])  # type: ignore
+@session(tags=["not test", "style"])  # type: ignore[call-overload]
 def style_checking(session: Session) -> None:
     args = session.posargs or locations
-    session.install(
-        "pyproject-flake8",
-        "flake8-eradicate",
-        "flake8-isort",
-        "flake8-debugger",
-        "flake8-comprehensions",
-        "flake8-print",
-        "flake8-black",
-        "flake8-black",
-        "darglint",
-        "pydocstyle",
-    )
-    session.run("pflake8", "--docstring-style", "sphinx", *args)
+    session.install("ruff")
+    session.run("ruff", "check", *args)
 
 
-@session(tags=["not test", "style"])  # type: ignore
+@session()
+def pyroma(session: Session) -> None:
+    session.install("poetry-core>=1.0.0")
+    session.install("pyroma")
+    session.run("pyroma", "--min", "10", ".")
+
+
+@session(tags=["not test", "style"])  # type: ignore[call-overload]
 def type_checking(session: Session) -> None:
     args = session.posargs or locations
     session.run_always("poetry", "install", external=True)
@@ -54,7 +54,7 @@ def type_checking(session: Session) -> None:
     )
 
 
-@session(tags=["not test"])  # type: ignore
+@session(tags=["not test"])  # type: ignore[call-overload]
 def build_docs(session: Session) -> None:
     session.install(".[docs]")
     session.install("sphinx")

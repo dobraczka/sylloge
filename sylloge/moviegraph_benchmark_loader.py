@@ -23,8 +23,10 @@ GRAPH_PAIRS: Tuple[GraphPair, ...] = (IMDB_TMDB, IMDB_TVDB, TMDB_TVDB)
 
 class MovieGraphBenchmark(CacheableEADataset):
     """Class containing the movie graph benchmark.
+
     Published in `Obraczka, D. et. al. (2021) Embedding-Assisted Entity Resolution for Knowledge Graphs <http://ceur-ws.org/Vol-2873/paper8.pdf>`_,
-    *Proceedings of the 2nd International Workshop on Knowledge Graph Construction co-located with 18th Extended Semantic Web Conference*"""
+    *Proceedings of the 2nd International Workshop on Knowledge Graph Construction co-located with 18th Extended Semantic Web Conference*
+    """
 
     def __init__(
         self,
@@ -69,14 +71,14 @@ class MovieGraphBenchmark(CacheableEADataset):
             )
             for fold in ds.folds
         ]
-        return dict(
-            rel_triples_left=ds.rel_triples_1,
-            rel_triples_right=ds.rel_triples_2,
-            attr_triples_left=ds.attr_triples_1,
-            attr_triples_right=ds.attr_triples_2,
-            ent_links=ds.ent_links,
-            folds=folds,
-        )
+        return {
+            "rel_triples_left": ds.rel_triples_1,
+            "rel_triples_right": ds.rel_triples_2,
+            "attr_triples_left": ds.attr_triples_1,
+            "attr_triples_right": ds.attr_triples_2,
+            "ent_links": ds.ent_links,
+            "folds": folds,
+        }
 
     @property
     def _canonical_name(self) -> str:

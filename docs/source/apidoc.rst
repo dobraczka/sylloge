@@ -20,8 +20,8 @@ Base
    :nosignatures:
 
     sylloge.base.TrainTestValSplit
-    sylloge.base.EADataset 
-    sylloge.base.CacheableEADataset 
+    sylloge.base.EADataset
+    sylloge.base.CacheableEADataset
     sylloge.base.ZipEADataset
     sylloge.base.ZipEADatasetWithPreSplitFolds
 
