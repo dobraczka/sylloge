@@ -1,12 +1,9 @@
-from collections import namedtuple
+from typing import NamedTuple
 
-DatasetStatistics = namedtuple(
-    "DatasetStatistics",
-    [
-        "num_rel_triples_left",
-        "num_rel_triples_right",
-        "num_attr_triples_left",
-        "num_attr_triples_right",
-        "num_ent_links",
-    ],
-)
+
+class DatasetStatistics(NamedTuple):
+    num_rel_triples_left: int
+    num_rel_triples_right: int
+    num_attr_triples_left: int
+    num_attr_triples_right: int
+    num_ent_links: int

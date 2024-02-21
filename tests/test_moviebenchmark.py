@@ -9,7 +9,7 @@ from sylloge.moviegraph_benchmark_loader import IMDB_TMDB, IMDB_TVDB, TMDB_TVDB
 
 statistics_with_params = [
     (
-        dict(graph_pair=IMDB_TMDB),
+        {"graph_pair": IMDB_TMDB},
         DatasetStatistics(
             num_rel_triples_left=17507,
             num_rel_triples_right=27903,
@@ -19,7 +19,7 @@ statistics_with_params = [
         ),
     ),
     (
-        dict(graph_pair=IMDB_TVDB),
+        {"graph_pair": IMDB_TVDB},
         DatasetStatistics(
             num_rel_triples_left=17507,
             num_rel_triples_right=15455,
@@ -29,7 +29,7 @@ statistics_with_params = [
         ),
     ),
     (
-        dict(graph_pair=TMDB_TVDB),
+        {"graph_pair": TMDB_TVDB},
         DatasetStatistics(
             num_rel_triples_left=27903,
             num_rel_triples_right=15455,
@@ -41,8 +41,8 @@ statistics_with_params = [
 ]
 
 
-@pytest.mark.slow
-@pytest.mark.parametrize("params,statistic", statistics_with_params)
+@pytest.mark.slow()
+@pytest.mark.parametrize(("params", "statistic"), statistics_with_params)
 def test_movie_benchmark(params: Dict, statistic: DatasetStatistics):
     ds = MovieGraphBenchmark(**params, use_cache=False)
     assert len(ds.rel_triples_left) == statistic.num_rel_triples_left
@@ -68,13 +68,13 @@ def test_movie_benchmark(params: Dict, statistic: DatasetStatistics):
             assert len(fold.val) == 249 or len(fold.val) == 248
 
 
-@pytest.mark.parametrize("params,statistic", statistics_with_params)
+@pytest.mark.parametrize(("params", "statistic"), statistics_with_params)
 def test_movie_benchmark_mock(
     params: Dict, statistic: DatasetStatistics, mocker, tmpdir, tmp_path
 ):
     rm = ResourceMocker(statistic=statistic, fraction=0.1)
     mocker.patch("sylloge.moviegraph_benchmark_loader.load_data", rm.mock_load_data)
-    for (use_cache, cache_exists) in [(False, False), (True, False), (True, True)]:
+    for use_cache, cache_exists in [(False, False), (True, False), (True, True)]:
         if cache_exists:
             # ensure this method doesn't get called
             mocker.patch(

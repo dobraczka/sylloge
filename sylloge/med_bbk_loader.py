@@ -8,8 +8,10 @@ MED_BBK_MODULE = BASE_DATASET_MODULE.module("med_bbk")
 
 class MED_BBK(ZipEADataset):
     """Class containing the MED-BBK dataset.
+
     Published in `Zhang, Z. et. al. (2020) An Industry Evaluation of Embedding-based Entity Alignment <A Benchmarking Study of Embedding-based Entity Alignment for Knowledge Graphs>`_,
-    *COLING*"""
+    *COLING*
+    """
 
     #: The link to the zip file
     _ZIP_LINK: str = (
@@ -26,7 +28,7 @@ class MED_BBK(ZipEADataset):
         use_cache: bool = True,
         cache_path: Optional[pathlib.Path] = None,
     ):
-        """Initializes an MED-BBK dataset.
+        """Initialize an MED-BBK dataset.
 
         :param backend: Whether to use "pandas" or "dask"
         :param npartitions: how many partitions to use for each frame, when using dask
@@ -36,7 +38,7 @@ class MED_BBK(ZipEADataset):
         # ensure zip file is present
         zip_path = MED_BBK_MODULE.ensure(
             url=MED_BBK._ZIP_LINK,
-            download_kwargs=dict(hexdigests=dict(sha512=MED_BBK._SHA512)),
+            download_kwargs=dict(hexdigests=dict(sha512=MED_BBK._SHA512)),  # noqa: C408
         )
 
         inner_path = "industry"
@@ -60,13 +62,13 @@ class MED_BBK(ZipEADataset):
         switched_columns = [ent_links.columns[1], ent_links.columns[0]]
         ent_links = ent_links[switched_columns]
         ent_links.columns = ["left", "right"]
-        return dict(
-            rel_triples_left=inital_dict["rel_triples_right"],
-            rel_triples_right=inital_dict["rel_triples_left"],
-            attr_triples_left=inital_dict["attr_triples_right"],
-            attr_triples_right=inital_dict["attr_triples_left"],
-            ent_links=ent_links,
-        )
+        return {
+            "rel_triples_left": inital_dict["rel_triples_right"],
+            "rel_triples_right": inital_dict["rel_triples_left"],
+            "attr_triples_left": inital_dict["attr_triples_right"],
+            "attr_triples_right": inital_dict["attr_triples_left"],
+            "ent_links": ent_links,
+        }
 
     @property
     def _canonical_name(self) -> str:

@@ -210,22 +210,21 @@ class EADataset(Generic[DataFrameType]):
 
     @backend.setter
     def backend(self, backend: BACKEND_LITERAL):
-        """Set backend and transform data if needed"""
+        """Set backend and transform data if needed."""
         if backend == "pandas":
             self._backend = "pandas"
             if isinstance(self.rel_triples_left, pd.DataFrame):
                 return
-            else:
-                self.rel_triples_left = self.rel_triples_left.compute()
-                self.rel_triples_right = self.rel_triples_right.compute()
-                self.attr_triples_left = self.attr_triples_left.compute()
-                self.attr_triples_right = self.attr_triples_right.compute()
-                self.ent_links = self.ent_links.compute()
-                if self.folds:
-                    for fold in self.folds:
-                        fold.train = fold.train.compute()
-                        fold.test = fold.test.compute()
-                        fold.val = fold.val.compute()
+            self.rel_triples_left = self.rel_triples_left.compute()
+            self.rel_triples_right = self.rel_triples_right.compute()
+            self.attr_triples_left = self.attr_triples_left.compute()
+            self.attr_triples_right = self.attr_triples_right.compute()
+            self.ent_links = self.ent_links.compute()
+            if self.folds:
+                for fold in self.folds:
+                    fold.train = fold.train.compute()
+                    fold.test = fold.test.compute()
+                    fold.val = fold.val.compute()
 
         elif backend == "dask":
             self._backend = "dask"
@@ -334,7 +333,7 @@ class EADataset(Generic[DataFrameType]):
             for fold_number, fold in enumerate(self.folds, start=1):
                 fold_dir = fold_path.joinpath(str(fold_number))
                 os.makedirs(fold_dir)
-                for links, link_path in zip(
+                for _, link_path in zip(
                     [fold.train, fold.test, fold.val],
                     [
                         self.__class__._TRAIN_LINKS_PATH,
@@ -357,7 +356,7 @@ class EADataset(Generic[DataFrameType]):
         read_parquet_fn = pd.read_parquet if backend == "pandas" else dd.read_parquet
 
         # read dataset names
-        with open(path.joinpath(cls._DATASET_NAMES_PATH), "r") as fh:
+        with open(path.joinpath(cls._DATASET_NAMES_PATH)) as fh:
             dataset_names = tuple(line.strip().split(":")[1] for line in fh)
             # for mypy
             dataset_names = cast(Tuple[str, str], dataset_names)
@@ -496,7 +495,7 @@ class CacheableEADataset(EADataset[DataFrameType]):
         inner_cache_path: str,
         cache_path: Optional[pathlib.Path] = None,
     ) -> pathlib.Path:
-        """Uses either pystow module or cache_path to create cache path.
+        """Use either pystow module or cache_path to create cache path.
 
         :param pystow_module: module where data is stored
         :param inner_cache_path: path relative to pystow/cache path
@@ -505,8 +504,7 @@ class CacheableEADataset(EADataset[DataFrameType]):
         """
         if cache_path is None:
             return pystow_module.join("cached", inner_cache_path, ensure_exists=False)
-        else:
-            return cache_path.joinpath(inner_cache_path)
+        return cache_path.joinpath(inner_cache_path)
 
     def load_from_cache(
         self, backend: BACKEND_LITERAL = "pandas"
@@ -574,23 +572,23 @@ class ZipEADataset(CacheableEADataset):
         )
 
     def initial_read(self, backend: BACKEND_LITERAL) -> Dict[str, Any]:
-        return dict(
-            rel_triples_left=self._read_triples(
+        return {
+            "rel_triples_left": self._read_triples(
                 file_name=self.file_name_rel_triples_left, backend=backend
             ),
-            rel_triples_right=self._read_triples(
+            "rel_triples_right": self._read_triples(
                 file_name=self.file_name_rel_triples_right, backend=backend
             ),
-            attr_triples_left=self._read_triples(
+            "attr_triples_left": self._read_triples(
                 file_name=self.file_name_attr_triples_left, backend=backend
             ),
-            attr_triples_right=self._read_triples(
+            "attr_triples_right": self._read_triples(
                 file_name=self.file_name_attr_triples_right, backend=backend
             ),
-            ent_links=self._read_triples(
+            "ent_links": self._read_triples(
                 file_name=self.file_name_ent_links, is_links=True, backend=backend
             ),
-        )
+        }
 
     @overload
     def _read_triples(
@@ -617,7 +615,7 @@ class ZipEADataset(CacheableEADataset):
         is_links: bool = False,
     ) -> Union[pd.DataFrame, "dd.DataFrame"]:
         columns = list(EA_SIDES) if is_links else COLUMNS
-        read_csv_kwargs = dict(
+        read_csv_kwargs = dict(  # noqa: C408
             header=None,
             names=columns,
             sep="\t",
@@ -630,13 +628,12 @@ class ZipEADataset(CacheableEADataset):
                 inner_path=str(self.inner_path.joinpath(file_name)),
                 **read_csv_kwargs,
             )
-        else:
-            return read_dask_df_archive_csv(
-                path=self.zip_path,
-                inner_path=str(self.inner_path.joinpath(file_name)),
-                protocol="zip",
-                **read_csv_kwargs,
-            )
+        return read_dask_df_archive_csv(
+            path=self.zip_path,
+            inner_path=str(self.inner_path.joinpath(file_name)),
+            protocol="zip",
+            **read_csv_kwargs,
+        )
 
 
 class ZipEADatasetWithPreSplitFolds(ZipEADataset):
@@ -706,7 +703,7 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset):
             file_name_attr_triples_right=file_name_attr_triples_right,
         )
 
-    def initial_read(self, backend: BACKEND_LITERAL):
+    def initial_read(self, backend: BACKEND_LITERAL) -> Dict[str, Any]:
         folds = []
         for fold in self.directory_names_individual_folds:
             fold_folder = pathlib.Path(self.directory_name_folds).joinpath(fold)
@@ -726,7 +723,7 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset):
                 backend=backend,
             )
             folds.append(TrainTestValSplit(train=train, test=test, val=val))
-        return {**super().initial_read(backend=backend), **dict(folds=folds)}
+        return {**super().initial_read(backend=backend), "folds": folds}
 
 
 def create_statistics_df(
@@ -783,8 +780,8 @@ def create_statistics_df(
                         num_ent_links,
                     ]
                 )
-    df = pd.DataFrame(
+    statistics_df = pd.DataFrame(
         rows,
         columns=columns,
     )
-    return df.set_index(index_cols)
+    return statistics_df.set_index(index_cols)

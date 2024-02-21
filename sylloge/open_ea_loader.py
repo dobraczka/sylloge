@@ -1,6 +1,7 @@
 # largely adapted from pykeen.datasets.ea.openea
 import pathlib
-from typing import Dict, Literal, Optional, Tuple
+from types import MappingProxyType
+from typing import Literal, Optional, Tuple
 
 from .base import BACKEND_LITERAL, BASE_DATASET_MODULE, ZipEADatasetWithPreSplitFolds
 
@@ -29,8 +30,10 @@ GRAPH_VERSIONS = (V1, V2)
 
 class OpenEA(ZipEADatasetWithPreSplitFolds):
     """Class containing the OpenEA dataset family.
+
     Published in `Sun, Z. et. al. (2020) A Benchmarking Study of Embedding-based Entity Alignment for Knowledge Graphs <http://www.vldb.org/pvldb/vol13/p2326-sun.pdf>`_,
-    *Proceedings of the VLDB Endowment*"""
+    *Proceedings of the VLDB Endowment*
+    """
 
     #: The link to the zip file
     _FIGSHARE_LINK: str = "https://figshare.com/ndownloader/files/34234391"
@@ -41,12 +44,14 @@ class OpenEA(ZipEADatasetWithPreSplitFolds):
         "9f86fbee94e1e78a7ee056dd69df1ce3fc210ae07dc64955ad2bfda7450545ef"
     )
 
-    _GRAPH_PAIR_TO_DS_NAMES: Dict[GraphPair, Tuple[str, str]] = {
-        "D_W": ("DBpedia", "Wikidata"),
-        "D_Y": ("DBpedia", "YAGO"),
-        "EN_DE": ("DBpedia_EN", "DBpedia_DE"),
-        "EN_FR": ("DBpedia_EN", "DBpedia_FR"),
-    }
+    _GRAPH_PAIR_TO_DS_NAMES = MappingProxyType(
+        {
+            "D_W": ("DBpedia", "Wikidata"),
+            "D_Y": ("DBpedia", "YAGO"),
+            "EN_DE": ("DBpedia_EN", "DBpedia_DE"),
+            "EN_FR": ("DBpedia_EN", "DBpedia_FR"),
+        }
+    )
 
     def __init__(
         self,
@@ -58,7 +63,7 @@ class OpenEA(ZipEADatasetWithPreSplitFolds):
         use_cache: bool = True,
         cache_path: Optional[pathlib.Path] = None,
     ):
-        """Initializes an OpenEA dataset.
+        """Initialize an OpenEA dataset.
 
         :param graph_pair: which pair to use of "D_W", "D_Y", "EN_DE" or "EN_FR"
         :param size: what size ("15K" or "100K")
@@ -85,7 +90,7 @@ class OpenEA(ZipEADatasetWithPreSplitFolds):
         zip_path = OPEN_EA_MODULE.ensure(
             url=OpenEA._FIGSHARE_LINK,
             name="OpenEA_dataset_v2.0.zip",
-            download_kwargs=dict(hexdigests=dict(sha512=OpenEA._SHA512)),
+            download_kwargs=dict(hexdigests=dict(sha512=OpenEA._SHA512)),  # noqa: C408
         )
 
         inner_cache_path = f"{graph_pair}_{size}_{version}"
