@@ -232,4 +232,3 @@ def test_open_ea_mock(
             assert isinstance(ds.rel_triples_left, pd.DataFrame)
         else:
             assert isinstance(ds.rel_triples_left, dd.DataFrame)
-            assert ds.rel_triples_left.npartitions == ds.npartitions

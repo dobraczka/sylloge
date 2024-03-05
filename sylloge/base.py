@@ -112,7 +112,6 @@ class EADataset(BaseEADataset[DataFrameType]):
         dataset_names: Tuple[str, str],
         folds: Optional[Sequence[TrainTestValSplit[DataFrameType]]] = None,
         backend: Literal["pandas"] = "pandas",
-        npartitions: int = 1,
     ):
         ...
 
@@ -128,7 +127,6 @@ class EADataset(BaseEADataset[DataFrameType]):
         dataset_names: Tuple[str, str],
         folds: Optional[Sequence[TrainTestValSplit[DataFrameType]]] = None,
         backend: Literal["dask"] = "dask",
-        npartitions: int = 1,
     ):
         ...
 
@@ -143,7 +141,6 @@ class EADataset(BaseEADataset[DataFrameType]):
         dataset_names: Tuple[str, str],
         folds: Optional[Sequence[TrainTestValSplit[DataFrameType]]] = None,
         backend: BACKEND_LITERAL = "pandas",
-        npartitions: int = 1,
     ) -> None:
         """Create an entity aligment dataclass.
 
@@ -155,7 +152,6 @@ class EADataset(BaseEADataset[DataFrameType]):
         :param ent_links: gold standard entity links of alignment
         :param folds: optional pre-split folds of the gold standard
         :param backend: which backend is used of either 'pandas' or 'dask'
-        :param npartitions: how many partitions to use for each frame, when using dask
         """
         super().__init__(
             rel_triples_left=rel_triples_left,  # type: ignore[arg-type]
@@ -167,7 +163,6 @@ class EADataset(BaseEADataset[DataFrameType]):
             folds=folds,  # type: ignore[arg-type]
         )
         self.backend = backend
-        self.npartitions = npartitions
 
     @property
     def _canonical_name(self) -> str:
@@ -347,17 +342,11 @@ class EADataset(BaseEADataset[DataFrameType]):
                         fold_dir.joinpath(link_path), **kwargs
                     )
                 folds.append(TrainTestValSplit(**train_test_val))
-        npartitions = 1
-        if backend == "dask":
-            npart = tables["rel_triples_left"].npartitions
-            assert isinstance(npart, int)
-            npartitions = npart
         return (
             dict(
                 dataset_names=dataset_names,
                 folds=folds,
                 backend=backend,
-                npartitions=npartitions,
                 **tables,
             ),
             {},
@@ -440,7 +429,6 @@ class CacheableEADataset(EADataset[DataFrameType]):
         self.cache_path = cache_path
         self.parquet_load_options = parquet_load_options or {}
         self.parquet_store_options = parquet_store_options or {}
-        specific_npartitions = init_kwargs["npartitions"]
         update_cache = False
         additional_kwargs: Dict[str, Any] = {}
         if use_cache:
@@ -456,8 +444,6 @@ class CacheableEADataset(EADataset[DataFrameType]):
                 update_cache = True
         else:
             init_kwargs.update(self.initial_read(backend=backend))
-        if specific_npartitions != 1:
-            init_kwargs["npartitions"] = specific_npartitions
         self.__dict__.update(additional_kwargs)
         if "backend" in init_kwargs:
             backend = init_kwargs.pop("backend")
@@ -515,7 +501,6 @@ class ZipEADataset(CacheableEADataset[DataFrameType]):
         file_name_attr_triples_right: str = "attr_triples_2",
         file_name_ent_links: str = "ent_links",
         backend: Literal["pandas"],
-        npartitions: int = 1,
         use_cache: bool = True,
     ):
         ...
@@ -534,7 +519,6 @@ class ZipEADataset(CacheableEADataset[DataFrameType]):
         file_name_attr_triples_right: str = "attr_triples_2",
         file_name_ent_links: str = "ent_links",
         backend: Literal["dask"],
-        npartitions: int = 1,
         use_cache: bool = True,
     ):
         ...
@@ -552,7 +536,6 @@ class ZipEADataset(CacheableEADataset[DataFrameType]):
         file_name_attr_triples_right: str = "attr_triples_2",
         file_name_ent_links: str = "ent_links",
         backend: BACKEND_LITERAL = "pandas",
-        npartitions: int = 1,
         use_cache: bool = True,
     ):
         """Initialize ZipEADataset.
@@ -567,7 +550,6 @@ class ZipEADataset(CacheableEADataset[DataFrameType]):
         :param file_name_attr_triples_right: file name of right attribute triples
         :param file_name_ent_links: file name gold standard containing all entity links
         :param backend: Whether to use "pandas" or "dask"
-        :param npartitions: how many partitions to use for each frame, when using dask
         :param use_cache: whether to use cache or not
         """
         self.zip_path = zip_path
@@ -582,7 +564,6 @@ class ZipEADataset(CacheableEADataset[DataFrameType]):
             dataset_names=dataset_names,
             cache_path=cache_path,
             backend=backend,  # type: ignore[arg-type]
-            npartitions=npartitions,
             use_cache=use_cache,
         )
 
@@ -652,7 +633,6 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset[DataFrameType]):
         file_name_attr_triples_left: str = "attr_triples_1",
         file_name_attr_triples_right: str = "attr_triples_2",
         backend: Literal["pandas"],
-        npartitions: int = 1,
         directory_name_folds: str = "721_5fold",
         directory_names_individual_folds: Sequence[str] = ("1", "2", "3", "4", "5"),
         file_name_test_links: str = "test_links",
@@ -676,7 +656,6 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset[DataFrameType]):
         file_name_attr_triples_left: str = "attr_triples_1",
         file_name_attr_triples_right: str = "attr_triples_2",
         backend: Literal["dask"],
-        npartitions: int = 1,
         directory_name_folds: str = "721_5fold",
         directory_names_individual_folds: Sequence[str] = ("1", "2", "3", "4", "5"),
         file_name_test_links: str = "test_links",
@@ -699,7 +678,6 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset[DataFrameType]):
         file_name_attr_triples_left: str = "attr_triples_1",
         file_name_attr_triples_right: str = "attr_triples_2",
         backend: BACKEND_LITERAL = "pandas",
-        npartitions: int = 1,
         directory_name_folds: str = "721_5fold",
         directory_names_individual_folds: Sequence[str] = ("1", "2", "3", "4", "5"),
         file_name_test_links: str = "test_links",
@@ -719,7 +697,6 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset[DataFrameType]):
         :param file_name_attr_triples_right: file name of right attribute triples
         :param file_name_ent_links: file name gold standard containing all entity links
         :param backend: Whether to use "pandas" or "dask"
-        :param npartitions: how many partitions to use for each frame, when using dask
         :param directory_name_folds: name of the folds directory
         :param directory_names_individual_folds: name of individual folds
         :param file_name_test_links: name of test link file
@@ -741,7 +718,6 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset[DataFrameType]):
             inner_path=inner_path,
             cache_path=cache_path,
             backend=backend,  # type: ignore[arg-type]
-            npartitions=npartitions,
             use_cache=use_cache,
             file_name_rel_triples_left=file_name_rel_triples_left,
             file_name_rel_triples_right=file_name_rel_triples_right,

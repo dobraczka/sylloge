@@ -68,7 +68,6 @@ class OpenEA(ZipEADatasetWithPreSplitFolds[DataFrameType]):
         size: GraphSize = "15K",
         version: GraphVersion = "V1",
         backend: Literal["pandas"] = "pandas",
-        npartitions: int = 1,
         use_cache: bool = True,
         cache_path: Optional[pathlib.Path] = None,
     ):
@@ -81,7 +80,6 @@ class OpenEA(ZipEADatasetWithPreSplitFolds[DataFrameType]):
         size: GraphSize = "15K",
         version: GraphVersion = "V1",
         backend: Literal["dask"] = "dask",
-        npartitions: int = 1,
         use_cache: bool = True,
         cache_path: Optional[pathlib.Path] = None,
     ):
@@ -93,7 +91,6 @@ class OpenEA(ZipEADatasetWithPreSplitFolds[DataFrameType]):
         size: GraphSize = "15K",
         version: GraphVersion = "V1",
         backend: BACKEND_LITERAL = "pandas",
-        npartitions: int = 1,
         use_cache: bool = True,
         cache_path: Optional[pathlib.Path] = None,
     ):
@@ -103,7 +100,6 @@ class OpenEA(ZipEADatasetWithPreSplitFolds[DataFrameType]):
         :param size: what size ("15K" or "100K")
         :param version: which version to use ("V1" or "V2")
         :param backend: Whether to use "pandas" or "dask"
-        :param npartitions: how many partitions to use for each frame, when using dask
         :param use_cache: whether to use cache or not
         :param cache_path: Path where cache will be stored/loaded
         :raises ValueError: if unknown graph_pair,size or version values are provided
@@ -138,7 +134,6 @@ class OpenEA(ZipEADatasetWithPreSplitFolds[DataFrameType]):
             zip_path=zip_path,
             inner_path=inner_path,
             backend=backend,  # type: ignore[arg-type]
-            npartitions=npartitions,
             dataset_names=OpenEA._GRAPH_PAIR_TO_DS_NAMES[graph_pair],
         )
 

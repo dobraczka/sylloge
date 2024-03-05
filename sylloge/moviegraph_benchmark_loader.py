@@ -32,7 +32,6 @@ class MovieGraphBenchmark(CacheableEADataset[pd.DataFrame]):
     def __init__(
         self,
         graph_pair: GraphPair = "imdb-tmdb",
-        npartitions: int = 1,
         use_cache: bool = True,
         cache_path: Optional[pathlib.Path] = None,
     ):
@@ -40,7 +39,6 @@ class MovieGraphBenchmark(CacheableEADataset[pd.DataFrame]):
 
         :param graph_pair: which graph pair to use of "imdb-tdmb","imdb-tvdb" or "tmdb-tvdb"
         :param backend: Whether to use "pandas" or "dask"
-        :param npartitions: how many partitions to use for each frame, when using dask
         :param use_cache: whether to use cache or not
         :param cache_path: Path where cache will be stored/loaded
         :raises ValueError: if unknown graph pair
@@ -59,7 +57,6 @@ class MovieGraphBenchmark(CacheableEADataset[pd.DataFrame]):
             cache_path=actual_cache_path,
             use_cache=use_cache,
             backend="pandas",
-            npartitions=npartitions,
             dataset_names=(left_name, right_name),
         )
 

@@ -249,7 +249,6 @@ class OAEI(CacheableEADataset[dd.DataFrame]):
     def __init__(
         self,
         task: OAEI_TASK_NAME = "starwars-swg",
-        npartitions: int = 1,
         use_cache: bool = True,
         cache_path: Optional[pathlib.Path] = None,
     ):
@@ -257,7 +256,6 @@ class OAEI(CacheableEADataset[dd.DataFrame]):
 
         :param task: Name of the task. Has to be one of {starwars-swg,starwars-swtor,marvelcinematicuniverse-marvel,memoryalpha-memorybeta, memoryalpha-stexpanded}
         :param backend: Whether to use "pandas" or "dask"
-        :param npartitions: how many partitions to use for each frame, when using dask
         :param use_cache: whether to use cache or not
         :param cache_path: Path where cache will be stored/loaded
         :raises ValueError: if unknown task value is provided
@@ -277,7 +275,6 @@ class OAEI(CacheableEADataset[dd.DataFrame]):
             cache_path=actual_cache_path,
             dataset_names=(left_name, right_name),
             backend="dask",
-            npartitions=npartitions,
         )
 
     def initial_read(self, backend: BACKEND_LITERAL):

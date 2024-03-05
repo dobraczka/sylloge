@@ -28,7 +28,6 @@ class MED_BBK(ZipEADataset[DataFrameType]):
     def __init__(
         self: "MED_BBK[pd.DataFrame]",
         backend: Literal["pandas"] = "pandas",
-        npartitions: int = 1,
         use_cache: bool = True,
         cache_path: Optional[pathlib.Path] = None,
     ):
@@ -38,7 +37,6 @@ class MED_BBK(ZipEADataset[DataFrameType]):
     def __init__(
         self: "MED_BBK[dd.DataFrame]",
         backend: Literal["dask"] = "dask",
-        npartitions: int = 1,
         use_cache: bool = True,
         cache_path: Optional[pathlib.Path] = None,
     ):
@@ -47,14 +45,12 @@ class MED_BBK(ZipEADataset[DataFrameType]):
     def __init__(
         self,
         backend: BACKEND_LITERAL = "pandas",
-        npartitions: int = 1,
         use_cache: bool = True,
         cache_path: Optional[pathlib.Path] = None,
     ):
         """Initialize an MED-BBK dataset.
 
         :param backend: Whether to use "pandas" or "dask"
-        :param npartitions: how many partitions to use for each frame, when using dask
         :param use_cache: whether to use cache or not
         :param cache_path: Path where cache will be stored/loaded
         """
@@ -74,7 +70,6 @@ class MED_BBK(ZipEADataset[DataFrameType]):
             zip_path=zip_path,
             inner_path=pathlib.PurePosixPath(inner_path),
             backend=backend,  # type: ignore[arg-type]
-            npartitions=npartitions,
             dataset_names=("MED", "BBK"),
         )
 
