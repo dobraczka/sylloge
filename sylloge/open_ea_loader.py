@@ -1,9 +1,17 @@
 # largely adapted from pykeen.datasets.ea.openea
 import pathlib
 from types import MappingProxyType
-from typing import Literal, Optional, Tuple
+from typing import Literal, Optional, Tuple, overload
 
-from .base import BACKEND_LITERAL, BASE_DATASET_MODULE, ZipEADatasetWithPreSplitFolds
+import dask.dataframe as dd
+import pandas as pd
+
+from .base import (
+    BACKEND_LITERAL,
+    BASE_DATASET_MODULE,
+    DataFrameType,
+    ZipEADatasetWithPreSplitFolds,
+)
 
 OPEN_EA_MODULE = BASE_DATASET_MODULE.module("open_ea")
 
@@ -28,7 +36,7 @@ V2: GraphVersion = "V2"
 GRAPH_VERSIONS = (V1, V2)
 
 
-class OpenEA(ZipEADatasetWithPreSplitFolds):
+class OpenEA(ZipEADatasetWithPreSplitFolds[DataFrameType]):
     """Class containing the OpenEA dataset family.
 
     Published in `Sun, Z. et. al. (2020) A Benchmarking Study of Embedding-based Entity Alignment for Knowledge Graphs <http://www.vldb.org/pvldb/vol13/p2326-sun.pdf>`_,
@@ -53,13 +61,36 @@ class OpenEA(ZipEADatasetWithPreSplitFolds):
         }
     )
 
+    @overload
+    def __init__(
+        self: "OpenEA[pd.DataFrame]",
+        graph_pair: GraphPair = "D_W",
+        size: GraphSize = "15K",
+        version: GraphVersion = "V1",
+        backend: Literal["pandas"] = "pandas",
+        use_cache: bool = True,
+        cache_path: Optional[pathlib.Path] = None,
+    ):
+        ...
+
+    @overload
+    def __init__(
+        self: "OpenEA[dd.DataFrame]",
+        graph_pair: GraphPair = "D_W",
+        size: GraphSize = "15K",
+        version: GraphVersion = "V1",
+        backend: Literal["dask"] = "dask",
+        use_cache: bool = True,
+        cache_path: Optional[pathlib.Path] = None,
+    ):
+        ...
+
     def __init__(
         self,
         graph_pair: GraphPair = "D_W",
         size: GraphSize = "15K",
         version: GraphVersion = "V1",
         backend: BACKEND_LITERAL = "pandas",
-        npartitions: int = 1,
         use_cache: bool = True,
         cache_path: Optional[pathlib.Path] = None,
     ):
@@ -69,7 +100,6 @@ class OpenEA(ZipEADatasetWithPreSplitFolds):
         :param size: what size ("15K" or "100K")
         :param version: which version to use ("V1" or "V2")
         :param backend: Whether to use "pandas" or "dask"
-        :param npartitions: how many partitions to use for each frame, when using dask
         :param use_cache: whether to use cache or not
         :param cache_path: Path where cache will be stored/loaded
         :raises ValueError: if unknown graph_pair,size or version values are provided
@@ -98,13 +128,12 @@ class OpenEA(ZipEADatasetWithPreSplitFolds):
         actual_cache_path = self.create_cache_path(
             OPEN_EA_MODULE, inner_cache_path, cache_path
         )
-        super().__init__(
+        super().__init__(  # type: ignore[misc]
             cache_path=actual_cache_path,
             use_cache=use_cache,
             zip_path=zip_path,
             inner_path=inner_path,
-            backend=backend,
-            npartitions=npartitions,
+            backend=backend,  # type: ignore[arg-type]
             dataset_names=OpenEA._GRAPH_PAIR_TO_DS_NAMES[graph_pair],
         )
 

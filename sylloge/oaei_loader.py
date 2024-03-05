@@ -11,7 +11,6 @@ import pandas as pd
 from .base import (
     BASE_DATASET_MODULE,
     CacheableEADataset,
-    DataFrameType,
     DatasetStatistics,
 )
 from .dask import read_dask_bag_from_archive_text
@@ -40,8 +39,12 @@ logger = logging.getLogger(__name__)
 REFLINE_TYPE_LITERAL = Literal["dismiss", "entity", "property", "class", "unknown"]
 REL_ATTR_LITERAL = Literal["rel", "attr"]
 
-reflinetype = pd.CategoricalDtype(categories=typing.get_args(REFLINE_TYPE_LITERAL))
-relattrlinetype = pd.CategoricalDtype(categories=typing.get_args(REL_ATTR_LITERAL))
+reflinetype = pd.CategoricalDtype(
+    categories=list(typing.get_args(REFLINE_TYPE_LITERAL))
+)
+relattrlinetype = pd.CategoricalDtype(
+    categories=list(typing.get_args(REL_ATTR_LITERAL))
+)
 
 
 class URL_SHA512_HASH(NamedTuple):
@@ -98,7 +101,7 @@ def fault_tolerant_parse_nt(
     return subj, pred, obj, triple_type
 
 
-class OAEI(CacheableEADataset[DataFrameType]):
+class OAEI(CacheableEADataset[dd.DataFrame]):
     """The  OAEI (Ontology Alignment Evaluation Initiative) Knowledge Graph Track tasks contain graphs created from fandom wikis.
 
     Five integration tasks are available:
@@ -111,8 +114,8 @@ class OAEI(CacheableEADataset[DataFrameType]):
     More information can be found at the `website <http://oaei.ontologymatching.org/2019/knowledgegraph/index.html>`_.
     """
 
-    class_links: pd.DataFrame
-    property_links: pd.DataFrame
+    class_links: dd.DataFrame
+    property_links: dd.DataFrame
 
     _CLASS_LINKS_PATH: str = "class_links_parquet"
     _PROPERTY_LINKS_PATH: str = "property_links_parquet"
@@ -246,8 +249,6 @@ class OAEI(CacheableEADataset[DataFrameType]):
     def __init__(
         self,
         task: OAEI_TASK_NAME = "starwars-swg",
-        backend: BACKEND_LITERAL = "dask",
-        npartitions: int = 1,
         use_cache: bool = True,
         cache_path: Optional[pathlib.Path] = None,
     ):
@@ -255,7 +256,6 @@ class OAEI(CacheableEADataset[DataFrameType]):
 
         :param task: Name of the task. Has to be one of {starwars-swg,starwars-swtor,marvelcinematicuniverse-marvel,memoryalpha-memorybeta, memoryalpha-stexpanded}
         :param backend: Whether to use "pandas" or "dask"
-        :param npartitions: how many partitions to use for each frame, when using dask
         :param use_cache: whether to use cache or not
         :param cache_path: Path where cache will be stored/loaded
         :raises ValueError: if unknown task value is provided
@@ -274,8 +274,7 @@ class OAEI(CacheableEADataset[DataFrameType]):
             use_cache=use_cache,
             cache_path=actual_cache_path,
             dataset_names=(left_name, right_name),
-            backend=backend,
-            npartitions=npartitions,
+            backend="dask",
         )
 
     def initial_read(self, backend: BACKEND_LITERAL):

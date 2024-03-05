@@ -1,6 +1,7 @@
 import pathlib
 from typing import Literal, Optional, Tuple
 
+import pandas as pd
 from moviegraphbenchmark import load_data
 
 from .base import (
@@ -21,7 +22,7 @@ TMDB_TVDB: GraphPair = "tmdb-tvdb"
 GRAPH_PAIRS: Tuple[GraphPair, ...] = (IMDB_TMDB, IMDB_TVDB, TMDB_TVDB)
 
 
-class MovieGraphBenchmark(CacheableEADataset):
+class MovieGraphBenchmark(CacheableEADataset[pd.DataFrame]):
     """Class containing the movie graph benchmark.
 
     Published in `Obraczka, D. et. al. (2021) Embedding-Assisted Entity Resolution for Knowledge Graphs <http://ceur-ws.org/Vol-2873/paper8.pdf>`_,
@@ -31,8 +32,6 @@ class MovieGraphBenchmark(CacheableEADataset):
     def __init__(
         self,
         graph_pair: GraphPair = "imdb-tmdb",
-        backend: BACKEND_LITERAL = "pandas",
-        npartitions: int = 1,
         use_cache: bool = True,
         cache_path: Optional[pathlib.Path] = None,
     ):
@@ -40,7 +39,6 @@ class MovieGraphBenchmark(CacheableEADataset):
 
         :param graph_pair: which graph pair to use of "imdb-tdmb","imdb-tvdb" or "tmdb-tvdb"
         :param backend: Whether to use "pandas" or "dask"
-        :param npartitions: how many partitions to use for each frame, when using dask
         :param use_cache: whether to use cache or not
         :param cache_path: Path where cache will be stored/loaded
         :raises ValueError: if unknown graph pair
@@ -58,8 +56,7 @@ class MovieGraphBenchmark(CacheableEADataset):
         super().__init__(
             cache_path=actual_cache_path,
             use_cache=use_cache,
-            backend=backend,
-            npartitions=npartitions,
+            backend="pandas",
             dataset_names=(left_name, right_name),
         )
 

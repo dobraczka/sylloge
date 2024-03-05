@@ -4,8 +4,8 @@ import pathlib
 from abc import abstractmethod
 from dataclasses import dataclass
 from typing import (
-    TYPE_CHECKING,
     Any,
+    Callable,
     Dict,
     Generic,
     Iterable,
@@ -14,7 +14,6 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
-    TypeVar,
     Union,
     cast,
     overload,
@@ -34,6 +33,7 @@ from .typing import (
     LABEL_HEAD,
     LABEL_RELATION,
     LABEL_TAIL,
+    DataFrameType,
 )
 from .utils import fix_dataclass_init_docs
 
@@ -41,11 +41,6 @@ BASE_DATASET_KEY = "sylloge"
 
 BASE_DATASET_MODULE = pystow.module(BASE_DATASET_KEY)
 
-DataFrameType = TypeVar("DataFrameType", pd.DataFrame, dd.DataFrame)
-
-
-if TYPE_CHECKING:
-    import dask.dataframe as dd
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +73,8 @@ class TrainTestValSplit(Generic[DataFrameType]):
 
 
 @fix_dataclass_init_docs
-class EADataset(Generic[DataFrameType]):
+@dataclass
+class BaseEADataset(Generic[DataFrameType]):
     """Dataset class holding information of the alignment class."""
 
     rel_triples_left: DataFrameType
@@ -88,6 +84,10 @@ class EADataset(Generic[DataFrameType]):
     ent_links: DataFrameType
     dataset_names: Tuple[str, str]
     folds: Optional[Sequence[TrainTestValSplit[DataFrameType]]] = None
+
+
+class EADataset(BaseEADataset[DataFrameType]):
+    """Dataset class holding information of the alignment class."""
 
     _REL_TRIPLES_LEFT_PATH: str = "rel_triples_left_parquet"
     _REL_TRIPLES_RIGHT_PATH: str = "rel_triples_right_parquet"
@@ -100,6 +100,36 @@ class EADataset(Generic[DataFrameType]):
     _VAL_LINKS_PATH: str = "val_parquet"
     _DATASET_NAMES_PATH: str = "dataset_names.txt"
 
+    @overload
+    def __init__(
+        self: "EADataset[pd.DataFrame]",
+        *,
+        rel_triples_left: DataFrameType,
+        rel_triples_right: DataFrameType,
+        attr_triples_left: DataFrameType,
+        attr_triples_right: DataFrameType,
+        ent_links: DataFrameType,
+        dataset_names: Tuple[str, str],
+        folds: Optional[Sequence[TrainTestValSplit[DataFrameType]]] = None,
+        backend: Literal["pandas"] = "pandas",
+    ):
+        ...
+
+    @overload
+    def __init__(
+        self: "EADataset[dd.DataFrame]",
+        *,
+        rel_triples_left: DataFrameType,
+        rel_triples_right: DataFrameType,
+        attr_triples_left: DataFrameType,
+        attr_triples_right: DataFrameType,
+        ent_links: DataFrameType,
+        dataset_names: Tuple[str, str],
+        folds: Optional[Sequence[TrainTestValSplit[DataFrameType]]] = None,
+        backend: Literal["dask"] = "dask",
+    ):
+        ...
+
     def __init__(
         self,
         *,
@@ -111,7 +141,6 @@ class EADataset(Generic[DataFrameType]):
         dataset_names: Tuple[str, str],
         folds: Optional[Sequence[TrainTestValSplit[DataFrameType]]] = None,
         backend: BACKEND_LITERAL = "pandas",
-        npartitions: int = 1,
     ) -> None:
         """Create an entity aligment dataclass.
 
@@ -123,18 +152,16 @@ class EADataset(Generic[DataFrameType]):
         :param ent_links: gold standard entity links of alignment
         :param folds: optional pre-split folds of the gold standard
         :param backend: which backend is used of either 'pandas' or 'dask'
-        :param npartitions: how many partitions to use for each frame, when using dask
         """
-        self.rel_triples_left = rel_triples_left
-        self.rel_triples_right = rel_triples_right
-        self.attr_triples_left = attr_triples_left
-        self.attr_triples_right = attr_triples_right
-        self.ent_links = ent_links
-        self.dataset_names = dataset_names
-        self.folds = folds
-        self.npartitions: int = npartitions
-        self._backend: BACKEND_LITERAL = backend
-        # trigger possible transformation
+        super().__init__(
+            rel_triples_left=rel_triples_left,  # type: ignore[arg-type]
+            rel_triples_right=rel_triples_right,  # type: ignore[arg-type]
+            attr_triples_left=attr_triples_left,  # type: ignore[arg-type]
+            attr_triples_right=attr_triples_right,  # type: ignore[arg-type]
+            ent_links=ent_links,  # type: ignore[arg-type]
+            dataset_names=dataset_names,
+            folds=folds,  # type: ignore[arg-type]
+        )
         self.backend = backend
 
     @property
@@ -201,95 +228,6 @@ class EADataset(Generic[DataFrameType]):
         left_ds_stats, right_ds_stats, num_ent_links = self.statistics()
         return f"{self.__class__.__name__}(backend={self.backend}, {self._param_repr}rel_triples_left={left_ds_stats.rel_triples}, rel_triples_right={right_ds_stats.rel_triples}, attr_triples_left={left_ds_stats.attr_triples}, attr_triples_right={right_ds_stats.attr_triples}, ent_links={num_ent_links}, folds={len(self.folds) if self.folds else None})"
 
-    def _additional_backend_handling(self, backend: BACKEND_LITERAL):
-        pass
-
-    @property
-    def backend(self) -> BACKEND_LITERAL:
-        return self._backend
-
-    @backend.setter
-    def backend(self, backend: BACKEND_LITERAL):
-        """Set backend and transform data if needed."""
-        if backend == "pandas":
-            self._backend = "pandas"
-            if isinstance(self.rel_triples_left, pd.DataFrame):
-                return
-            self.rel_triples_left = self.rel_triples_left.compute()
-            self.rel_triples_right = self.rel_triples_right.compute()
-            self.attr_triples_left = self.attr_triples_left.compute()
-            self.attr_triples_right = self.attr_triples_right.compute()
-            self.ent_links = self.ent_links.compute()
-            if self.folds:
-                for fold in self.folds:
-                    fold.train = fold.train.compute()
-                    fold.test = fold.test.compute()
-                    fold.val = fold.val.compute()
-
-        elif backend == "dask":
-            self._backend = "dask"
-            if isinstance(self.rel_triples_left, dd.DataFrame):
-                if self.rel_triples_left.npartitions != self.npartitions:
-                    self.rel_triples_left = self.rel_triples_left.repartition(
-                        npartitions=self.npartitions
-                    )
-                    self.rel_triples_right = self.rel_triples_right.repartition(
-                        npartitions=self.npartitions
-                    )
-                    self.attr_triples_left = self.attr_triples_left.repartition(
-                        npartitions=self.npartitions
-                    )
-                    self.attr_triples_right = self.attr_triples_right.repartition(
-                        npartitions=self.npartitions
-                    )
-                    self.ent_links = self.ent_links.repartition(
-                        npartitions=self.npartitions
-                    )
-                    if self.folds:
-                        for fold in self.folds:
-                            fold.train = fold.train.repartition(
-                                npartitions=self.npartitions
-                            )
-                            fold.test = fold.test.repartition(
-                                npartitions=self.npartitions
-                            )
-                            fold.val = fold.val.repartition(
-                                npartitions=self.npartitions
-                            )
-                else:
-                    return
-
-            else:
-                self.rel_triples_left = dd.from_pandas(
-                    self.rel_triples_left, npartitions=self.npartitions
-                )
-                self.rel_triples_right = dd.from_pandas(
-                    self.rel_triples_right, npartitions=self.npartitions
-                )
-                self.attr_triples_left = dd.from_pandas(
-                    self.attr_triples_left, npartitions=self.npartitions
-                )
-                self.attr_triples_right = dd.from_pandas(
-                    self.attr_triples_right, npartitions=self.npartitions
-                )
-                self.ent_links = dd.from_pandas(
-                    self.ent_links, npartitions=self.npartitions
-                )
-                if self.folds:
-                    for fold in self.folds:
-                        fold.train = dd.from_pandas(
-                            fold.train, npartitions=self.npartitions
-                        )
-                        fold.test = dd.from_pandas(
-                            fold.test, npartitions=self.npartitions
-                        )
-                        fold.val = dd.from_pandas(
-                            fold.val, npartitions=self.npartitions
-                        )
-        else:
-            raise ValueError(f"Unknown backend {backend}")
-        self._additional_backend_handling(backend)
-
     def to_parquet(self, path: Union[str, pathlib.Path], **kwargs):
         """Write dataset to path as several parquet files.
 
@@ -353,7 +291,10 @@ class EADataset(Generic[DataFrameType]):
         if not isinstance(path, pathlib.Path):
             path = pathlib.Path(path)
 
-        read_parquet_fn = pd.read_parquet if backend == "pandas" else dd.read_parquet
+        read_parquet_fn = cast(  # did not find another way to get the correct type
+            Callable[[Any], DataFrameType],
+            pd.read_parquet if backend == "pandas" else dd.read_parquet,
+        )
 
         # read dataset names
         with open(path.joinpath(cls._DATASET_NAMES_PATH)) as fh:
@@ -388,7 +329,7 @@ class EADataset(Generic[DataFrameType]):
             folds = []
             for tmp_fold_dir in sorted(sub_dir for sub_dir in os.listdir(fold_path)):
                 fold_dir = fold_path.joinpath(tmp_fold_dir)
-                train_test_val = {}
+                train_test_val: Dict[str, DataFrameType] = {}
                 for links, link_path in zip(
                     ["train", "test", "val"],
                     [
@@ -401,15 +342,11 @@ class EADataset(Generic[DataFrameType]):
                         fold_dir.joinpath(link_path), **kwargs
                     )
                 folds.append(TrainTestValSplit(**train_test_val))
-        npartitions = 1
-        if backend == "dask":
-            npartitions = tables["rel_triples_left"].npartitions
         return (
             dict(
                 dataset_names=dataset_names,
                 folds=folds,
                 backend=backend,
-                npartitions=npartitions,
                 **tables,
             ),
             {},
@@ -444,6 +381,32 @@ class EADataset(Generic[DataFrameType]):
 
 
 class CacheableEADataset(EADataset[DataFrameType]):
+    @overload
+    def __init__(
+        self: "CacheableEADataset[pd.DataFrame]",
+        *,
+        cache_path: pathlib.Path,
+        use_cache: bool = True,
+        parquet_load_options: Optional[Mapping] = None,
+        parquet_store_options: Optional[Mapping] = None,
+        backend: Literal["pandas"],
+        **init_kwargs,
+    ):
+        ...
+
+    @overload
+    def __init__(
+        self: "CacheableEADataset[dd.DataFrame]",
+        *,
+        cache_path: pathlib.Path,
+        use_cache: bool = True,
+        parquet_load_options: Optional[Mapping] = None,
+        parquet_store_options: Optional[Mapping] = None,
+        backend: Literal["dask"],
+        **init_kwargs,
+    ):
+        ...
+
     def __init__(
         self,
         *,
@@ -451,6 +414,7 @@ class CacheableEADataset(EADataset[DataFrameType]):
         use_cache: bool = True,
         parquet_load_options: Optional[Mapping] = None,
         parquet_store_options: Optional[Mapping] = None,
+        backend: BACKEND_LITERAL = "pandas",
         **init_kwargs,
     ):
         """EADataset that uses caching after initial read.
@@ -459,13 +423,12 @@ class CacheableEADataset(EADataset[DataFrameType]):
         :param use_cache: whether to use cache
         :param parquet_load_options: handed through to parquet loading function
         :param parquet_store_options: handed through to parquet writing function
+        :param backend: Whether to use pandas or dask for reading/writing
         :param init_kwargs: other arguments for creating the EADataset instance
         """
         self.cache_path = cache_path
         self.parquet_load_options = parquet_load_options or {}
         self.parquet_store_options = parquet_store_options or {}
-        backend = init_kwargs["backend"]
-        specific_npartitions = init_kwargs["npartitions"]
         update_cache = False
         additional_kwargs: Dict[str, Any] = {}
         if use_cache:
@@ -481,10 +444,10 @@ class CacheableEADataset(EADataset[DataFrameType]):
                 update_cache = True
         else:
             init_kwargs.update(self.initial_read(backend=backend))
-        if specific_npartitions != 1:
-            init_kwargs["npartitions"] = specific_npartitions
         self.__dict__.update(additional_kwargs)
-        super().__init__(**init_kwargs)
+        if "backend" in init_kwargs:
+            backend = init_kwargs.pop("backend")
+        super().__init__(backend=backend, **init_kwargs)  # type: ignore[arg-type]
         if update_cache:
             logger.info(f"Caching dataset at {self.cache_path}")
             self.store_cache()
@@ -521,8 +484,44 @@ class CacheableEADataset(EADataset[DataFrameType]):
         self.to_parquet(self.cache_path, **self.parquet_store_options)
 
 
-class ZipEADataset(CacheableEADataset):
+class ZipEADataset(CacheableEADataset[DataFrameType]):
     """Dataset created from zip file which is downloaded."""
+
+    @overload
+    def __init__(
+        self: "ZipEADataset[pd.DataFrame]",
+        *,
+        cache_path: pathlib.Path,
+        zip_path: str,
+        inner_path: pathlib.PurePosixPath,
+        dataset_names: Tuple[str, str],
+        file_name_rel_triples_left: str = "rel_triples_1",
+        file_name_rel_triples_right: str = "rel_triples_2",
+        file_name_attr_triples_left: str = "attr_triples_1",
+        file_name_attr_triples_right: str = "attr_triples_2",
+        file_name_ent_links: str = "ent_links",
+        backend: Literal["pandas"],
+        use_cache: bool = True,
+    ):
+        ...
+
+    @overload
+    def __init__(
+        self: "ZipEADataset[dd.DataFrame]",
+        *,
+        cache_path: pathlib.Path,
+        zip_path: str,
+        inner_path: pathlib.PurePosixPath,
+        dataset_names: Tuple[str, str],
+        file_name_rel_triples_left: str = "rel_triples_1",
+        file_name_rel_triples_right: str = "rel_triples_2",
+        file_name_attr_triples_left: str = "attr_triples_1",
+        file_name_attr_triples_right: str = "attr_triples_2",
+        file_name_ent_links: str = "ent_links",
+        backend: Literal["dask"],
+        use_cache: bool = True,
+    ):
+        ...
 
     def __init__(
         self,
@@ -537,7 +536,6 @@ class ZipEADataset(CacheableEADataset):
         file_name_attr_triples_right: str = "attr_triples_2",
         file_name_ent_links: str = "ent_links",
         backend: BACKEND_LITERAL = "pandas",
-        npartitions: int = 1,
         use_cache: bool = True,
     ):
         """Initialize ZipEADataset.
@@ -552,7 +550,6 @@ class ZipEADataset(CacheableEADataset):
         :param file_name_attr_triples_right: file name of right attribute triples
         :param file_name_ent_links: file name gold standard containing all entity links
         :param backend: Whether to use "pandas" or "dask"
-        :param npartitions: how many partitions to use for each frame, when using dask
         :param use_cache: whether to use cache or not
         """
         self.zip_path = zip_path
@@ -563,11 +560,10 @@ class ZipEADataset(CacheableEADataset):
         self.file_name_attr_triples_left = file_name_attr_triples_left
         self.file_name_attr_triples_right = file_name_attr_triples_right
 
-        super().__init__(
+        super().__init__(  # type: ignore[misc]
             dataset_names=dataset_names,
             cache_path=cache_path,
-            backend=backend,
-            npartitions=npartitions,
+            backend=backend,  # type: ignore[arg-type]
             use_cache=use_cache,
         )
 
@@ -590,30 +586,12 @@ class ZipEADataset(CacheableEADataset):
             ),
         }
 
-    @overload
-    def _read_triples(
-        self,
-        file_name: Union[str, pathlib.Path],
-        backend: Literal["pandas"],
-        is_links: bool = False,
-    ) -> pd.DataFrame:
-        ...
-
-    @overload
-    def _read_triples(
-        self,
-        file_name: Union[str, pathlib.Path],
-        backend: Literal["dask"],
-        is_links: bool = False,
-    ) -> "dd.DataFrame":
-        ...
-
     def _read_triples(
         self,
         file_name: Union[str, pathlib.Path],
         backend: BACKEND_LITERAL,
         is_links: bool = False,
-    ) -> Union[pd.DataFrame, "dd.DataFrame"]:
+    ) -> DataFrameType:
         columns = list(EA_SIDES) if is_links else COLUMNS
         read_csv_kwargs = dict(  # noqa: C408
             header=None,
@@ -623,21 +601,69 @@ class ZipEADataset(CacheableEADataset):
             dtype=str,
         )
         if backend == "pandas":
-            return read_zipfile_csv(
+            trip = read_zipfile_csv(
                 path=self.zip_path,
                 inner_path=str(self.inner_path.joinpath(file_name)),
                 **read_csv_kwargs,
             )
-        return read_dask_df_archive_csv(
-            path=self.zip_path,
-            inner_path=str(self.inner_path.joinpath(file_name)),
-            protocol="zip",
-            **read_csv_kwargs,
-        )
+        else:
+            trip = read_dask_df_archive_csv(
+                path=self.zip_path,
+                inner_path=str(self.inner_path.joinpath(file_name)),
+                protocol="zip",
+                **read_csv_kwargs,
+            )
+        return cast(DataFrameType, trip)
 
 
-class ZipEADatasetWithPreSplitFolds(ZipEADataset):
+class ZipEADatasetWithPreSplitFolds(ZipEADataset[DataFrameType]):
     """Dataset with pre-split folds created from zip file which is downloaded."""
+
+    @overload
+    def __init__(
+        self: "ZipEADatasetWithPreSplitFolds[pd.DataFrame]",
+        *,
+        cache_path: pathlib.Path,
+        zip_path: str,
+        inner_path: pathlib.PurePosixPath,
+        dataset_names: Tuple[str, str],
+        file_name_rel_triples_left: str = "rel_triples_1",
+        file_name_rel_triples_right: str = "rel_triples_2",
+        file_name_ent_links: str = "ent_links",
+        file_name_attr_triples_left: str = "attr_triples_1",
+        file_name_attr_triples_right: str = "attr_triples_2",
+        backend: Literal["pandas"],
+        directory_name_folds: str = "721_5fold",
+        directory_names_individual_folds: Sequence[str] = ("1", "2", "3", "4", "5"),
+        file_name_test_links: str = "test_links",
+        file_name_train_links: str = "train_links",
+        file_name_valid_links: str = "valid_links",
+        use_cache: bool = True,
+    ):
+        ...
+
+    @overload
+    def __init__(
+        self: "ZipEADatasetWithPreSplitFolds[dd.DataFrame]",
+        *,
+        cache_path: pathlib.Path,
+        zip_path: str,
+        inner_path: pathlib.PurePosixPath,
+        dataset_names: Tuple[str, str],
+        file_name_rel_triples_left: str = "rel_triples_1",
+        file_name_rel_triples_right: str = "rel_triples_2",
+        file_name_ent_links: str = "ent_links",
+        file_name_attr_triples_left: str = "attr_triples_1",
+        file_name_attr_triples_right: str = "attr_triples_2",
+        backend: Literal["dask"],
+        directory_name_folds: str = "721_5fold",
+        directory_names_individual_folds: Sequence[str] = ("1", "2", "3", "4", "5"),
+        file_name_test_links: str = "test_links",
+        file_name_train_links: str = "train_links",
+        file_name_valid_links: str = "valid_links",
+        use_cache: bool = True,
+    ):
+        ...
 
     def __init__(
         self,
@@ -652,7 +678,6 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset):
         file_name_attr_triples_left: str = "attr_triples_1",
         file_name_attr_triples_right: str = "attr_triples_2",
         backend: BACKEND_LITERAL = "pandas",
-        npartitions: int = 1,
         directory_name_folds: str = "721_5fold",
         directory_names_individual_folds: Sequence[str] = ("1", "2", "3", "4", "5"),
         file_name_test_links: str = "test_links",
@@ -672,7 +697,6 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset):
         :param file_name_attr_triples_right: file name of right attribute triples
         :param file_name_ent_links: file name gold standard containing all entity links
         :param backend: Whether to use "pandas" or "dask"
-        :param npartitions: how many partitions to use for each frame, when using dask
         :param directory_name_folds: name of the folds directory
         :param directory_names_individual_folds: name of individual folds
         :param file_name_test_links: name of test link file
@@ -688,13 +712,12 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset):
         self.file_name_test_links = file_name_test_links
         self.file_name_valid_links = file_name_valid_links
 
-        super().__init__(
+        super().__init__(  # type: ignore[misc]
             dataset_names=dataset_names,
             zip_path=zip_path,
             inner_path=inner_path,
             cache_path=cache_path,
-            backend=backend,
-            npartitions=npartitions,
+            backend=backend,  # type: ignore[arg-type]
             use_cache=use_cache,
             file_name_rel_triples_left=file_name_rel_triples_left,
             file_name_rel_triples_right=file_name_rel_triples_right,

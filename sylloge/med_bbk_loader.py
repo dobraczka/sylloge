@@ -1,12 +1,15 @@
 import pathlib
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Literal, Optional, overload
 
-from .base import BACKEND_LITERAL, BASE_DATASET_MODULE, ZipEADataset
+import dask.dataframe as dd
+import pandas as pd
+
+from .base import BACKEND_LITERAL, BASE_DATASET_MODULE, DataFrameType, ZipEADataset
 
 MED_BBK_MODULE = BASE_DATASET_MODULE.module("med_bbk")
 
 
-class MED_BBK(ZipEADataset):
+class MED_BBK(ZipEADataset[DataFrameType]):
     """Class containing the MED-BBK dataset.
 
     Published in `Zhang, Z. et. al. (2020) An Industry Evaluation of Embedding-based Entity Alignment <A Benchmarking Study of Embedding-based Entity Alignment for Knowledge Graphs>`_,
@@ -21,17 +24,33 @@ class MED_BBK(ZipEADataset):
     #: The hex digest for the zip file
     _SHA512: str = "da1ee2b025070fd6890fb7e77b07214af3767b5ae85bcdc1bb36958b4b8dd935bc636e3466b94169158940a960541f96284e3217d32976bfeefa56e29d4a9e0d"
 
+    @overload
+    def __init__(
+        self: "MED_BBK[pd.DataFrame]",
+        backend: Literal["pandas"] = "pandas",
+        use_cache: bool = True,
+        cache_path: Optional[pathlib.Path] = None,
+    ):
+        ...
+
+    @overload
+    def __init__(
+        self: "MED_BBK[dd.DataFrame]",
+        backend: Literal["dask"] = "dask",
+        use_cache: bool = True,
+        cache_path: Optional[pathlib.Path] = None,
+    ):
+        ...
+
     def __init__(
         self,
         backend: BACKEND_LITERAL = "pandas",
-        npartitions: int = 1,
         use_cache: bool = True,
         cache_path: Optional[pathlib.Path] = None,
     ):
         """Initialize an MED-BBK dataset.
 
         :param backend: Whether to use "pandas" or "dask"
-        :param npartitions: how many partitions to use for each frame, when using dask
         :param use_cache: whether to use cache or not
         :param cache_path: Path where cache will be stored/loaded
         """
@@ -45,13 +64,12 @@ class MED_BBK(ZipEADataset):
         actual_cache_path = self.create_cache_path(
             MED_BBK_MODULE, inner_path, cache_path
         )
-        super().__init__(
+        super().__init__(  # type: ignore[misc]
             cache_path=actual_cache_path,
             use_cache=use_cache,
             zip_path=zip_path,
             inner_path=pathlib.PurePosixPath(inner_path),
-            backend=backend,
-            npartitions=npartitions,
+            backend=backend,  # type: ignore[arg-type]
             dataset_names=("MED", "BBK"),
         )
 

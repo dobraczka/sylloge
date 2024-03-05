@@ -1,4 +1,7 @@
-from typing import Literal, Tuple
+from typing import Literal, Tuple, TypeVar
+
+import dask.dataframe as dd
+import pandas as pd
 
 # borrowed from pykeen.typing
 Target = Literal["head", "relation", "tail"]
@@ -10,4 +13,6 @@ EA_SIDE_LEFT: EASide = "left"
 EA_SIDE_RIGHT: EASide = "right"
 EA_SIDES: Tuple[EASide, EASide] = (EA_SIDE_LEFT, EA_SIDE_RIGHT)
 COLUMNS = [LABEL_HEAD, LABEL_RELATION, LABEL_TAIL]
+
 BACKEND_LITERAL = Literal["pandas", "dask"]
+DataFrameType = TypeVar("DataFrameType", pd.DataFrame, dd.DataFrame)
