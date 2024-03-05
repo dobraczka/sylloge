@@ -120,23 +120,23 @@ class OAEI(CacheableEADataset[DataFrameType]):
     _TASK_URLS = MappingProxyType(
         {
             "starwars-swg": URL_SHA512_HASH(
-                "https://cloud.scadsai.uni-leipzig.de/index.php/s/WzRxffgoq2qqn7q/download/starwars-swg.tar.gz",
+                "https://cloud.scadsai.uni-leipzig.de/index.php/s/829pMexBq2ywZn5/download/starwars-swg.tar.gz",
                 "ac6c1ca1b374e24fbeaf368a4ecf5254c54be38d0cbc1880815310ffa534c2266fa0da840014facf5fff430f777ef342a2d432fe00cf6fc14a0a12419d6966be",
             ),
             "starwars-swtor": URL_SHA512_HASH(
-                "https://cloud.scadsai.uni-leipzig.de/index.php/s/CcG6tANX4JqacNY/download/starwars-swtor.tar.gz",
+                "https://cloud.scadsai.uni-leipzig.de/index.php/s/JQXBjsPcHyddeAF/download/starwars-swtor.tar.gz",
                 "6b7913c5613bbc8c2aa849936d8b86c4613b73cebd06f8ee1c5e26f3605f95e61115a8a4d2d1399dbeb047579440899e9ecfce31f8c95c6013260dd3785cac80",
             ),
             "marvelcinematicuniverse-marvel": URL_SHA512_HASH(
-                "https://cloud.scadsai.uni-leipzig.de/index.php/s/CH3NNin95BGjgb3/download/marvelcinematicuniverse-marvel.tar.gz",
+                "https://cloud.scadsai.uni-leipzig.de/index.php/s/oA6TdY8pczqsSCx/download/marvelcinematicuniverse-marvel.tar.gz",
                 "d67936030c5ada48e6415774210527af51bf964828edd3f18beed51146ea9f70425cb760d073803189c4079dc68a4e39168fb1105c42fa6e82b790eb01e4a207",
             ),
             "memoryalpha-memorybeta": URL_SHA512_HASH(
-                "https://cloud.scadsai.uni-leipzig.de/index.php/s/d6TYKFfDKxZEpiy/download/memoryalpha-memorybeta.tar.gz",
+                "https://cloud.scadsai.uni-leipzig.de/index.php/s/xcpKXct8L399KJn/download/memoryalpha-memorybeta.tar.gz",
                 "afb0a06225afcc2ae6edf5dcd513e48d4159e3d9bf94fc3cda6495a8c98a26fbc369413c587daec09e6ff7d045bf061a16ab8b65af4e22d0c91113390dc5d8d3",
             ),
             "memoryalpha-stexpanded": URL_SHA512_HASH(
-                "https://cloud.scadsai.uni-leipzig.de/index.php/s/wSaRamAT5R5ieFZ/download/memoryalpha-stexpanded.tar.gz",
+                "https://cloud.scadsai.uni-leipzig.de/index.php/s/RX743pJyfeRELe9/download/memoryalpha-stexpanded.tar.gz",
                 "3d6f93c46425b4cb06f5a532601af9ee0a9fcdc3928709fa0ac66617099a27e26c244c024ae097274173cf2c910b045ea412fb225f51323eb7cdad86ad2461cc",
             ),
         }
