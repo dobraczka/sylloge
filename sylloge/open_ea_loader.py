@@ -9,8 +9,8 @@ import pandas as pd
 from .base import (
     BACKEND_LITERAL,
     BASE_DATASET_MODULE,
+    BinaryZipEADatasetWithPreSplitFolds,
     DataFrameType,
-    ZipEADatasetWithPreSplitFolds,
 )
 
 OPEN_EA_MODULE = BASE_DATASET_MODULE.module("open_ea")
@@ -36,7 +36,7 @@ V2: GraphVersion = "V2"
 GRAPH_VERSIONS = (V1, V2)
 
 
-class OpenEA(ZipEADatasetWithPreSplitFolds[DataFrameType]):
+class OpenEA(BinaryZipEADatasetWithPreSplitFolds[DataFrameType]):
     """Class containing the OpenEA dataset family.
 
     Published in `Sun, Z. et. al. (2020) A Benchmarking Study of Embedding-based Entity Alignment for Knowledge Graphs <http://www.vldb.org/pvldb/vol13/p2326-sun.pdf>`_,

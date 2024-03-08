@@ -3,14 +3,15 @@ import logging
 import pathlib
 import typing
 from types import MappingProxyType
-from typing import Any, Dict, Literal, NamedTuple, Optional, Tuple, Union
+from typing import Any, Dict, List, Literal, NamedTuple, Optional, Tuple, Union
 
 import dask.dataframe as dd
 import pandas as pd
+from eche import ClusterHelper
 
 from .base import (
     BASE_DATASET_MODULE,
-    CacheableEADataset,
+    BinaryCacheableEADataset,
     DatasetStatistics,
 )
 from .dask import read_dask_bag_from_archive_text
@@ -101,7 +102,7 @@ def fault_tolerant_parse_nt(
     return subj, pred, obj, triple_type
 
 
-class OAEI(CacheableEADataset[dd.DataFrame]):
+class OAEI(BinaryCacheableEADataset[dd.DataFrame]):
     """The  OAEI (Ontology Alignment Evaluation Initiative) Knowledge Graph Track tasks contain graphs created from fandom wikis.
 
     Five integration tasks are available:
@@ -114,8 +115,8 @@ class OAEI(CacheableEADataset[dd.DataFrame]):
     More information can be found at the `website <http://oaei.ontologymatching.org/2019/knowledgegraph/index.html>`_.
     """
 
-    class_links: dd.DataFrame
-    property_links: dd.DataFrame
+    class_links: ClusterHelper
+    property_links: ClusterHelper
 
     _CLASS_LINKS_PATH: str = "class_links_parquet"
     _PROPERTY_LINKS_PATH: str = "property_links_parquet"
@@ -149,98 +150,108 @@ class OAEI(CacheableEADataset[dd.DataFrame]):
     _precalc_ds_statistics = MappingProxyType(
         {
             "starwars-swg": (
-                DatasetStatistics(
-                    rel_triples=6675247,
-                    attr_triples=1570786,
-                    entities=536869,
-                    relations=561,
-                    properties=603,
-                    literals=622454,
-                ),
-                DatasetStatistics(
-                    rel_triples=178085,
-                    attr_triples=76269,
-                    entities=47692,
-                    relations=50,
-                    properties=146,
-                    literals=32765,
-                ),
+                [
+                    DatasetStatistics(
+                        rel_triples=6675247,
+                        attr_triples=1570786,
+                        entities=536869,
+                        relations=561,
+                        properties=603,
+                        literals=622454,
+                    ),
+                    DatasetStatistics(
+                        rel_triples=178085,
+                        attr_triples=76269,
+                        entities=47692,
+                        relations=50,
+                        properties=146,
+                        literals=32765,
+                    ),
+                ],
                 1096,
             ),
             "starwars-swtor": (
-                DatasetStatistics(
-                    rel_triples=6675247,
-                    attr_triples=1570786,
-                    entities=536869,
-                    relations=561,
-                    properties=603,
-                    literals=622454,
-                ),
-                DatasetStatistics(
-                    rel_triples=105543,
-                    attr_triples=40605,
-                    entities=22791,
-                    relations=137,
-                    properties=346,
-                    literals=16984,
-                ),
+                [
+                    DatasetStatistics(
+                        rel_triples=6675247,
+                        attr_triples=1570786,
+                        entities=536869,
+                        relations=561,
+                        properties=603,
+                        literals=622454,
+                    ),
+                    DatasetStatistics(
+                        rel_triples=105543,
+                        attr_triples=40605,
+                        entities=22791,
+                        relations=137,
+                        properties=346,
+                        literals=16984,
+                    ),
+                ],
                 1358,
             ),
             "marvelcinematicuniverse-marvel": (
-                DatasetStatistics(
-                    rel_triples=1094598,
-                    attr_triples=130517,
-                    entities=216033,
-                    relations=130,
-                    properties=110,
-                    literals=56566,
-                ),
-                DatasetStatistics(
-                    rel_triples=5152898,
-                    attr_triples=1580468,
-                    entities=1472619,
-                    relations=63,
-                    properties=127,
-                    literals=749980,
-                ),
+                [
+                    DatasetStatistics(
+                        rel_triples=1094598,
+                        attr_triples=130517,
+                        entities=216033,
+                        relations=130,
+                        properties=110,
+                        literals=56566,
+                    ),
+                    DatasetStatistics(
+                        rel_triples=5152898,
+                        attr_triples=1580468,
+                        entities=1472619,
+                        relations=63,
+                        properties=127,
+                        literals=749980,
+                    ),
+                ],
                 1654,
             ),
             "memoryalpha-memorybeta": (
-                DatasetStatistics(
-                    rel_triples=2096198,
-                    attr_triples=430730,
-                    entities=254537,
-                    relations=180,
-                    properties=287,
-                    literals=226110,
-                ),
-                DatasetStatistics(
-                    rel_triples=2048728,
-                    attr_triples=494181,
-                    entities=212302,
-                    relations=327,
-                    properties=332,
-                    literals=231196,
-                ),
+                [
+                    DatasetStatistics(
+                        rel_triples=2096198,
+                        attr_triples=430730,
+                        entities=254537,
+                        relations=180,
+                        properties=287,
+                        literals=226110,
+                    ),
+                    DatasetStatistics(
+                        rel_triples=2048728,
+                        attr_triples=494181,
+                        entities=212302,
+                        relations=327,
+                        properties=332,
+                        literals=231196,
+                    ),
+                ],
                 9296,
             ),
             "memoryalpha-stexpanded": (
-                DatasetStatistics(
-                    rel_triples=2096198,
-                    attr_triples=430730,
-                    entities=254537,
-                    relations=180,
-                    properties=287,
-                    literals=226110,
-                ),
-                DatasetStatistics(
-                    rel_triples=412179,
-                    attr_triples=155207,
-                    entities=55402,
-                    relations=133,
-                    properties=194,
-                    literals=70310,
-                ),
+                [
+                    DatasetStatistics(
+                        rel_triples=2096198,
+                        attr_triples=430730,
+                        entities=254537,
+                        relations=180,
+                        properties=287,
+                        literals=226110,
+                    ),
+                    DatasetStatistics(
+                        rel_triples=412179,
+                        attr_triples=155207,
+                        entities=55402,
+                        relations=133,
+                        properties=194,
+                        literals=70310,
+                    ),
+                ],
                 1725,
             ),
         }
@@ -295,14 +306,18 @@ class OAEI(CacheableEADataset[dd.DataFrame]):
 
         # need to set before initialization
         # because of possible transforming
-        self.property_links = property_mapping_df
-        self.class_links = class_mapping_df
+        self.property_links = ClusterHelper.from_numpy(
+            property_mapping_df.compute().to_numpy()
+        )
+        self.class_links = ClusterHelper.from_numpy(
+            class_mapping_df.compute().to_numpy()
+        )
         return {
-            "rel_triples_left": left_rel,
-            "rel_triples_right": right_rel,
-            "attr_triples_left": left_attr,
-            "attr_triples_right": right_attr,
-            "ent_links": entity_mapping_df,
+            "rel_triples": [left_rel, right_rel],
+            "attr_triples": [left_attr, right_attr],
+            "ent_links": ClusterHelper.from_numpy(
+                entity_mapping_df.compute().to_numpy()
+            ),
         }
 
     @property
@@ -313,7 +328,7 @@ class OAEI(CacheableEADataset[dd.DataFrame]):
     def _param_repr(self) -> str:
         return f"task={self.task}, "
 
-    def statistics(self) -> Tuple[DatasetStatistics, DatasetStatistics, int]:
+    def statistics(self) -> Tuple[List[DatasetStatistics], int]:
         return self.__class__._precalc_ds_statistics[self.task]
 
     def __repr__(self) -> str:
@@ -428,7 +443,7 @@ class OAEI(CacheableEADataset[dd.DataFrame]):
                 self.__class__._CLASS_LINKS_PATH,
             ],
         ):
-            table.to_parquet(path.joinpath(table_path), **kwargs)
+            table.to_file(path.joinpath(table_path), write_cluster_id=False)
 
     @classmethod
     def _read_parquet_values(
@@ -454,7 +469,7 @@ class OAEI(CacheableEADataset[dd.DataFrame]):
                 cls._CLASS_LINKS_PATH,
             ],
         ):
-            additional_init_args[table] = pd.read_parquet(
-                path.joinpath(table_path), **kwargs
+            additional_init_args[table] = ClusterHelper.from_file(
+                path.joinpath(table_path), has_cluster_id=False
             )
         return init_args, additional_init_args

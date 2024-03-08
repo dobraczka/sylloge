@@ -1,7 +1,15 @@
 import logging
 from importlib.metadata import version  # pragma: no cover
 
-from .base import EADataset
+from .base import (
+    BinaryEADataset,
+    BinaryParquetEADataset,
+    CacheableEADataset,
+    MultiSourceEADataset,
+    ParquetEADataset,
+    ZipEADataset,
+    ZipEADatasetWithPreSplitFolds,
+)
 from .id_mapped import IdMappedEADataset
 from .med_bbk_loader import MED_BBK
 from .moviegraph_benchmark_loader import MovieGraphBenchmark
@@ -14,7 +22,16 @@ __all__ = [
     "OAEI",
     "MED_BBK",
     "IdMappedEADataset",
-    "EADataset",
+    "MultiSourceEADataset",
+    "BinaryEADataset",
+    "BinaryParquetEADataset",
+    "ParquetEADataset",
+    "BinaryCacheableEADataset",
+    "CacheableEADataset",
+    "BinaryZipEADataset",
+    "ZipEADataset",
+    "BinaryZipEADatasetWithPreSplitFolds",
+    "ZipEADatasetWithPreSplitFolds",
 ]
 __version__ = version(__package__)
 logging.getLogger(__name__).setLevel(logging.INFO)

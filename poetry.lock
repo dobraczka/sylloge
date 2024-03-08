@@ -417,6 +417,26 @@ files = [
 ]
 
 [[package]]
+name = "eche"
+version = "0.1.0"
+description = "Little helper for handling entity clusters"
+category = "main"
+optional = false
+python-versions = ">=3.8,<4.0"
+files = []
+develop = false
+
+[package.dependencies]
+networkx = "*"
+
+[package.extras]
+docs = ["mkdocs (>=1.5.3,<2.0.0)", "mkdocs-gen-files (>=0.5.0,<0.6.0)", "mkdocs-literate-nav (>=0.6.1,<0.7.0)", "mkdocs-material (>=9.5.9,<10.0.0)", "mkdocs-section-index (>=0.3.8,<0.4.0)", "mkdocstrings[python] (>=0.24.0,<0.25.0)"]
+
+[package.source]
+type = "directory"
+url = "../eche"
+
+[[package]]
 name = "exceptiongroup"
 version = "1.2.0"
 description = "Backport of PEP 654 (exception groups)"
@@ -836,6 +856,25 @@ files = [
     {file = "mypy_extensions-1.0.0-py3-none-any.whl", hash = "sha256:4392f6c0eb8a5668a69e23d168ffa70f0be9ccfd32b5cc2d26a34ae5b844552d"},
     {file = "mypy_extensions-1.0.0.tar.gz", hash = "sha256:75dbf8955dc00442a438fc4d0666508a9a97b6bd41aa2f0ffe9d2f2725af0782"},
 ]
+
+[[package]]
+name = "networkx"
+version = "3.1"
+description = "Python package for creating and manipulating graphs and networks"
+category = "main"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "networkx-3.1-py3-none-any.whl", hash = "sha256:4f33f68cb2afcf86f28a45f43efc27a9386b535d567d2127f8f61d51dec58d36"},
+    {file = "networkx-3.1.tar.gz", hash = "sha256:de346335408f84de0eada6ff9fafafff9bcda11f0a0dfaa931133debb146ab61"},
+]
+
+[package.extras]
+default = ["matplotlib (>=3.4)", "numpy (>=1.20)", "pandas (>=1.3)", "scipy (>=1.8)"]
+developer = ["mypy (>=1.1)", "pre-commit (>=3.2)"]
+doc = ["nb2plots (>=0.6)", "numpydoc (>=1.5)", "pillow (>=9.4)", "pydata-sphinx-theme (>=0.13)", "sphinx (>=6.1)", "sphinx-gallery (>=0.12)", "texext (>=0.6.7)"]
+extra = ["lxml (>=4.6)", "pydot (>=1.4.2)", "pygraphviz (>=1.10)", "sympy (>=1.10)"]
+test = ["codecov (>=2.1)", "pytest (>=7.2)", "pytest-cov (>=4.0)"]
 
 [[package]]
 name = "nox"
@@ -1917,4 +1956,4 @@ docs = ["Sphinx", "insegel", "sphinx-automodapi", "sphinx-autodoc-typehints"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<4.0"
-content-hash = "e26714be60b20d6c7ce5bcbb9149bea310fb740cb9aaac43492b4ffb44a04723"
+content-hash = "46ffa23428fdaf03d06f39f07e087e12eb27881234c1fd918b10ac5466631be6"

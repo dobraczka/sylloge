@@ -2,9 +2,10 @@ from typing import Dict, Tuple
 
 import pandas as pd
 import pytest
+from eche import ClusterHelper
 from strawman import dummy_triples
 
-from sylloge.base import EADataset, TrainTestValSplit
+from sylloge.base import BinaryEADataset, TrainTestValSplit
 from sylloge.id_mapped import IdMappedEADataset, enhance_mapping
 
 
@@ -19,7 +20,7 @@ def _create_simple_mapping(
 
 
 @pytest.fixture()
-def example() -> Tuple[EADataset, Dict[str, int], Dict[str, int], Dict[str, int]]:
+def example() -> Tuple[BinaryEADataset, Dict[str, int], Dict[str, int], Dict[str, int]]:
     seed = 42
     left_ent_num = 8
     left_rel_num = 6
@@ -87,7 +88,9 @@ def example() -> Tuple[EADataset, Dict[str, int], Dict[str, int], Dict[str, int]
     )
     folds = [
         TrainTestValSplit(
-            train=entity_links[:3], test=entity_links[3:5], val=entity_links[5:]
+            train=ClusterHelper.from_numpy(entity_links[:3].to_numpy()),
+            test=ClusterHelper.from_numpy(entity_links[3:5].to_numpy()),
+            val=ClusterHelper.from_numpy(entity_links[5:].to_numpy()),
         )
     ]
 
@@ -111,7 +114,7 @@ def example() -> Tuple[EADataset, Dict[str, int], Dict[str, int], Dict[str, int]
     )
 
     return (
-        EADataset(
+        BinaryEADataset(
             rel_triples_left=left_rel,
             rel_triples_right=right_rel,
             attr_triples_left=left_attr,

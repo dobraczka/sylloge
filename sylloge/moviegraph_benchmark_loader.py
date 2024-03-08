@@ -14,7 +14,7 @@ from .base import (
 MOVIEGRAPH_MODULE = BASE_DATASET_MODULE.module("moviegraphbenchmark")
 
 # graph pairs
-GraphPair = Literal["imdb-tmdb", "imdb-tvdb", "tmdb-tvdb"]
+GraphPair = Literal["imdb-tmdb", "imdb-tvdb", "tmdb-tvdb", "multi"]
 IMDB_TMDB: GraphPair = "imdb-tmdb"
 IMDB_TVDB: GraphPair = "imdb-tvdb"
 TMDB_TVDB: GraphPair = "tmdb-tvdb"
@@ -37,8 +37,7 @@ class MovieGraphBenchmark(CacheableEADataset[pd.DataFrame]):
     ):
         """Initialize a MovieGraphBenchmark dataset.
 
-        :param graph_pair: which graph pair to use of "imdb-tdmb","imdb-tvdb" or "tmdb-tvdb"
-        :param backend: Whether to use "pandas" or "dask"
+        :param graph_pair: which graph pair to use of "imdb-tdmb","imdb-tvdb" or "tmdb-tvdb" or "multi" for multi-source setting
         :param use_cache: whether to use cache or not
         :param cache_path: Path where cache will be stored/loaded
         :raises ValueError: if unknown graph pair

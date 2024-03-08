@@ -4,12 +4,17 @@ from typing import Any, Dict, Literal, Optional, overload
 import dask.dataframe as dd
 import pandas as pd
 
-from .base import BACKEND_LITERAL, BASE_DATASET_MODULE, DataFrameType, ZipEADataset
+from .base import (
+    BACKEND_LITERAL,
+    BASE_DATASET_MODULE,
+    BinaryZipEADataset,
+    DataFrameType,
+)
 
 MED_BBK_MODULE = BASE_DATASET_MODULE.module("med_bbk")
 
 
-class MED_BBK(ZipEADataset[DataFrameType]):
+class MED_BBK(BinaryZipEADataset[DataFrameType]):
     """Class containing the MED-BBK dataset.
 
     Published in `Zhang, Z. et. al. (2020) An Industry Evaluation of Embedding-based Entity Alignment <A Benchmarking Study of Embedding-based Entity Alignment for Knowledge Graphs>`_,
@@ -76,16 +81,10 @@ class MED_BBK(ZipEADataset[DataFrameType]):
     def initial_read(self, backend: BACKEND_LITERAL) -> Dict[str, Any]:
         # MED is KG2 and BBK is KG1
         inital_dict = super().initial_read(backend=backend)
-        ent_links = inital_dict["ent_links"]
-        switched_columns = [ent_links.columns[1], ent_links.columns[0]]
-        ent_links = ent_links[switched_columns]
-        ent_links.columns = ["left", "right"]
         return {
-            "rel_triples_left": inital_dict["rel_triples_right"],
-            "rel_triples_right": inital_dict["rel_triples_left"],
-            "attr_triples_left": inital_dict["attr_triples_right"],
-            "attr_triples_right": inital_dict["attr_triples_left"],
-            "ent_links": ent_links,
+            "rel_triples": inital_dict["rel_triples"][::-1],
+            "attr_triples": inital_dict["attr_triples"][::-1],
+            "ent_links": inital_dict["ent_links"],
         }
 
     @property
