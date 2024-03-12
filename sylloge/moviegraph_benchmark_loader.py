@@ -1,7 +1,10 @@
+import os
 import pathlib
-from typing import Literal, Optional, Tuple
+from collections import OrderedDict
+from typing import Dict, Literal, Optional, Tuple
 
 import pandas as pd
+from eche import PrefixedClusterHelper
 from moviegraphbenchmark import load_data
 
 from .base import (
@@ -18,8 +21,29 @@ GraphPair = Literal["imdb-tmdb", "imdb-tvdb", "tmdb-tvdb", "multi"]
 IMDB_TMDB: GraphPair = "imdb-tmdb"
 IMDB_TVDB: GraphPair = "imdb-tvdb"
 TMDB_TVDB: GraphPair = "tmdb-tvdb"
+MULTI: GraphPair = "multi"
 
-GRAPH_PAIRS: Tuple[GraphPair, ...] = (IMDB_TMDB, IMDB_TVDB, TMDB_TVDB)
+GRAPH_PAIRS: Tuple[GraphPair, ...] = (IMDB_TMDB, IMDB_TVDB, TMDB_TVDB, MULTI)
+
+# graph names
+GraphName = Literal["imdb", "tmdb", "tvdb"]
+IMDB: GraphName = "imdb"
+TMDB: GraphName = "tmdb"
+TVDB: GraphName = "tvdb"
+
+# prefixes
+BASE_PREFIX = "https://www.scads.de/movieBenchmark/resource/"
+IMDB_PREFIX = f"{BASE_PREFIX}IMDB/"
+TMDB_PREFIX = f"{BASE_PREFIX}TMDB/"
+TVDB_PREFIX = f"{BASE_PREFIX}TVDB/"
+
+
+GP_TO_DS_PREFIX: Dict[GraphPair, OrderedDict[str, str]] = {
+    IMDB_TMDB: OrderedDict({IMDB: IMDB_PREFIX, TMDB: TMDB_PREFIX}),
+    IMDB_TVDB: OrderedDict({IMDB: IMDB_PREFIX, TVDB: TVDB_PREFIX}),
+    TMDB_TVDB: OrderedDict({TMDB: TMDB_PREFIX, TVDB: TVDB_PREFIX}),
+    MULTI: OrderedDict({IMDB: IMDB_PREFIX, TMDB: TMDB_PREFIX, TVDB: TVDB_PREFIX}),
+}
 
 
 class MovieGraphBenchmark(CacheableEADataset[pd.DataFrame]):
@@ -28,6 +52,8 @@ class MovieGraphBenchmark(CacheableEADataset[pd.DataFrame]):
     Published in `Obraczka, D. et. al. (2021) Embedding-Assisted Entity Resolution for Knowledge Graphs <http://ceur-ws.org/Vol-2873/paper8.pdf>`_,
     *Proceedings of the 2nd International Workshop on Knowledge Graph Construction co-located with 18th Extended Semantic Web Conference*
     """
+
+    ent_links: PrefixedClusterHelper
 
     def __init__(
         self,
@@ -51,28 +77,53 @@ class MovieGraphBenchmark(CacheableEADataset[pd.DataFrame]):
         actual_cache_path = self.create_cache_path(
             MOVIEGRAPH_MODULE, graph_pair, cache_path
         )
-        left_name, right_name = self.graph_pair.split("-")
+        ds_names = (
+            tuple(self.graph_pair.split("-"))
+            if graph_pair != MULTI
+            else ("imdb", "tmdb", "tvdb")
+        )
         super().__init__(
             cache_path=actual_cache_path,
             use_cache=use_cache,
             backend="pandas",
-            dataset_names=(left_name, right_name),
+            dataset_names=ds_names,
         )
 
     def initial_read(self, backend: BACKEND_LITERAL):
-        ds = load_data(pair=self.graph_pair, data_path=str(MOVIEGRAPH_MODULE.base))
+        ds_prefixes = GP_TO_DS_PREFIX[self.graph_pair]
+        data_path = str(MOVIEGRAPH_MODULE.base)
+        print("data_path=%s" % (data_path))
+        if self.graph_pair == MULTI:
+            ds = load_data(pair=IMDB_TMDB, data_path=data_path)
+            ds2 = load_data(pair=TMDB_TVDB, data_path=data_path)
+            rel_triples = [ds.rel_triples_1, ds.rel_triples_2, ds2.rel_triples_2]
+            attr_triples = [ds.attr_triples_1, ds.attr_triples_2, ds2.attr_triples_2]
+        else:
+            ds = load_data(pair=self.graph_pair, data_path=data_path)
+            rel_triples = [ds.rel_triples_1, ds.rel_triples_2]
+            attr_triples = [ds.attr_triples_1, ds.attr_triples_2]
+            ent_links = PrefixedClusterHelper.from_file(
+                os.path.join(data_path, self.graph_pair, "cluster"),
+                ds_prefixes=ds_prefixes,
+            )
         folds = [
             TrainTestValSplit(
-                train=fold.train_links, test=fold.test_links, val=fold.valid_links
+                train=PrefixedClusterHelper.from_numpy(
+                    fold.train_links.to_numpy(), ds_prefixes=ds_prefixes
+                ),
+                test=PrefixedClusterHelper.from_numpy(
+                    fold.test_links.to_numpy(), ds_prefixes=ds_prefixes
+                ),
+                val=PrefixedClusterHelper.from_numpy(
+                    fold.valid_links.to_numpy(), ds_prefixes=ds_prefixes
+                ),
             )
             for fold in ds.folds
         ]
         return {
-            "rel_triples_left": ds.rel_triples_1,
-            "rel_triples_right": ds.rel_triples_2,
-            "attr_triples_left": ds.attr_triples_1,
-            "attr_triples_right": ds.attr_triples_2,
-            "ent_links": ds.ent_links,
+            "rel_triples": rel_triples,
+            "attr_triples": attr_triples,
+            "ent_links": ent_links,
             "folds": folds,
         }
 

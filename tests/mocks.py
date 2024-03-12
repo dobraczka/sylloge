@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 from moviegraphbenchmark.loading import ERData, Fold
 from strawman import dummy_df, dummy_triples
-from util import DatasetStatistics
+from util import EATaskStatistics
 
 from sylloge.typing import EA_SIDE_LEFT, EA_SIDE_RIGHT, EA_SIDES
 
@@ -14,12 +14,12 @@ from sylloge.typing import EA_SIDE_LEFT, EA_SIDE_RIGHT, EA_SIDES
 class ResourceMocker:
     def __init__(
         self,
-        statistic: Optional[DatasetStatistics] = None,
+        statistic: Optional[EATaskStatistics] = None,
         fraction: float = 1.0,
         seed: int = 17,
     ):
         if statistic is None:
-            self.statistic = DatasetStatistics(
+            self.statistic = EATaskStatistics(
                 num_rel_triples_left=15,
                 num_rel_triples_right=15,
                 num_attr_triples_left=15,

@@ -141,7 +141,7 @@ class MultiSourceEADataset(Generic[DataFrameType]):
     def _create_ds_repr(self) -> str:
         ds_stats, num_ent_links = self.statistics()
         ds_stat_repr = " ".join(
-            f"rel_triples_{idx}={stat.rel_triples}, rel_triples_{idx}={stat.rel_triples}"
+            f"rel_triples_{idx}={stat.rel_triples}, attr_triples_{idx}={stat.attr_triples}"
             for idx, stat in enumerate(ds_stats)
         )
         return f"{ds_stat_repr}, ent_links={num_ent_links}, folds={len(self.folds) if self.folds else None}"

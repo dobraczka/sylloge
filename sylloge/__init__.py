@@ -7,6 +7,7 @@ from .base import (
     CacheableEADataset,
     MultiSourceEADataset,
     ParquetEADataset,
+    TrainTestValSplit,
     ZipEADataset,
     ZipEADatasetWithPreSplitFolds,
 )
@@ -32,6 +33,7 @@ __all__ = [
     "ZipEADataset",
     "BinaryZipEADatasetWithPreSplitFolds",
     "ZipEADatasetWithPreSplitFolds",
+    "TrainTestValSplit",
 ]
 __version__ = version(__package__)
 logging.getLogger(__name__).setLevel(logging.INFO)
