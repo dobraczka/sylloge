@@ -3,10 +3,21 @@ from typing import Dict, Iterable, Mapping, Optional, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
-from eche import ClusterHelper
 
-from .base import BinaryEADataset, TrainTestValSplit
 from .utils import fix_dataclass_init_docs
+
+
+@fix_dataclass_init_docs
+@dataclass
+class PandasTrainTestValSplit:
+    """Dataclass holding split of gold standard entity links."""
+
+    #: entity links for training
+    train: pd.DataFrame
+    #: entity links for testing
+    test: pd.DataFrame
+    #: entity links for validation
+    val: pd.DataFrame
 
 
 def enhance_mapping(
@@ -111,7 +122,7 @@ def _id_map_attr_triples(
     )
 
 
-def _map_links(links: ClusterHelper, entity_mapping: Dict[str, int]) -> np.ndarray:
+def _map_links(links: pd.DataFrame, entity_mapping: Dict[str, int]) -> np.ndarray:
     """Map links via given mapping.
 
     :param links: entity links
@@ -175,7 +186,7 @@ class IdMappedEADataset:
         attr_triples_left: pd.DataFrame,
         attr_triples_right: pd.DataFrame,
         ent_links: pd.DataFrame,
-        folds: Optional[Sequence[TrainTestValSplit]],
+        folds: Optional[Sequence[PandasTrainTestValSplit]] = None,
     ) -> "IdMappedEADataset":
         id_rel_triples_left, entity_mapping, rel_mapping = id_map_rel_triples(
             rel_triples_left
@@ -225,17 +236,4 @@ class IdMappedEADataset:
             attr_rel_mapping=attr_rel_mapping,
             attr_mapping=attr_mapping,
             folds=new_folds,
-        )
-
-    @classmethod
-    def from_ea_dataset(
-        cls, dataset: BinaryEADataset[pd.DataFrame]
-    ) -> "IdMappedEADataset":
-        return IdMappedEADataset.from_frames(
-            rel_triples_left=dataset.rel_triples_left,
-            rel_triples_right=dataset.rel_triples_right,
-            attr_triples_left=dataset.attr_triples_left,
-            attr_triples_right=dataset.attr_triples_right,
-            ent_links=dataset.ent_links,
-            folds=dataset.folds,
         )

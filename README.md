@@ -51,21 +51,6 @@ You can get a canonical name for a dataset instance to use e.g. to create folder
    'openea_d_w_15k_v1'
 ```
 
-Create id-mapped dataset for embedding-based methods:
-
-```
->>> from sylloge import IdMappedEADataset
->>> id_mapped_ds = IdMappedEADataset.from_ea_dataset(ds)
->>> id_mapped_ds
-IdMappedEADataset(rel_triples_left=38265, rel_triples_right=42746, attr_triples_left=52134, attr_triples_right=138246, ent_links=15000, entity_mapping=30000, rel_mapping=417, attr_rel_mapping=990, attr_mapping=138836, folds=5)
->>> id_mapped_ds.rel_triples_right
-[[26048   330 16880]
- [19094   293 23348]
- [16554   407 29192]
- ...
- [16480   330 15109]
- [18465   254 19956]
- [26040   290 28560]]
 ```
 
 You can use [dask](https://www.dask.org/) as backend for larger datasets:
