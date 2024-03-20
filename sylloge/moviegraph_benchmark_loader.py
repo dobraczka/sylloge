@@ -92,12 +92,14 @@ class MovieGraphBenchmark(CacheableEADataset[pd.DataFrame]):
     def initial_read(self, backend: BACKEND_LITERAL):
         ds_prefixes = GP_TO_DS_PREFIX[self.graph_pair]
         data_path = str(MOVIEGRAPH_MODULE.base)
-        print("data_path=%s" % (data_path))
         if self.graph_pair == MULTI:
             ds = load_data(pair=IMDB_TMDB, data_path=data_path)
             ds2 = load_data(pair=TMDB_TVDB, data_path=data_path)
             rel_triples = [ds.rel_triples_1, ds.rel_triples_2, ds2.rel_triples_2]
             attr_triples = [ds.attr_triples_1, ds.attr_triples_2, ds2.attr_triples_2]
+            ent_links = PrefixedClusterHelper.from_file(
+                os.path.join(data_path, "multi_source_cluster"), ds_prefixes=ds_prefixes
+            )
         else:
             ds = load_data(pair=self.graph_pair, data_path=data_path)
             rel_triples = [ds.rel_triples_1, ds.rel_triples_2]

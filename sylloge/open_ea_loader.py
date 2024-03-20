@@ -61,6 +61,21 @@ class OpenEA(BinaryZipEADatasetWithPreSplitFolds[DataFrameType]):
         }
     )
 
+    _GRAPH_PAIR_TO_PREFIXES = MappingProxyType(
+        {
+            "D_W": ("http://dbpedia.org/resource/", "http://www.wikidata.org/entity/"),
+            "D_Y": ("http://dbpedia.org/resource/", "YAGO/"),
+            "EN_DE": (
+                "http://dbpedia.org/resource/",
+                "http://de.dbpedia.org/resource/",
+            ),
+            "EN_FR": (
+                "http://dbpedia.org/resource/",
+                "http://fr.dbpedia.org/resource/",
+            ),
+        }
+    )
+
     @overload
     def __init__(
         self: "OpenEA[pd.DataFrame]",

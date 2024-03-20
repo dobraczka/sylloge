@@ -13,161 +13,145 @@ statistics_with_params = [
     (
         {"graph_pair": D_W, "size": SIZE_15K, "version": V1},
         EATaskStatistics(
-            num_rel_triples_left=38265,
-            num_rel_triples_right=42746,
-            num_attr_triples_left=52134,
-            num_attr_triples_right=138246,
+            num_rel_triples=(38265, 42746),
+            num_attr_triples=(52134, 138246),
             num_ent_links=15000,
+            num_intra_ent_links=(0, 0),
         ),
     ),
     (
         {"graph_pair": D_W, "size": SIZE_15K, "version": V2},
         EATaskStatistics(
-            num_rel_triples_left=73983,
-            num_rel_triples_right=83365,
-            num_attr_triples_left=51378,
-            num_attr_triples_right=175686,
+            num_rel_triples=(73983, 83365),
+            num_attr_triples=(51378, 175686),
             num_ent_links=15000,
+            num_intra_ent_links=(0, 0),
         ),
     ),
     (
         {"graph_pair": D_Y, "size": SIZE_15K, "version": V1},
         EATaskStatistics(
-            num_rel_triples_left=30291,
-            num_rel_triples_right=26638,
-            num_attr_triples_left=52093,
-            num_attr_triples_right=117114,
+            num_rel_triples=(30291, 26638),
+            num_attr_triples=(52093, 117114),
             num_ent_links=15000,
+            num_intra_ent_links=(0, 0),
         ),
     ),
     (
         {"graph_pair": D_Y, "size": SIZE_15K, "version": V2},
         EATaskStatistics(
-            num_rel_triples_left=68063,
-            num_rel_triples_right=60970,
-            num_attr_triples_left=49602,
-            num_attr_triples_right=116151,
+            num_rel_triples=(68063, 60970),
+            num_attr_triples=(49602, 116151),
             num_ent_links=15000,
+            num_intra_ent_links=(0, 0),
         ),
     ),
     (
         {"graph_pair": EN_DE, "size": SIZE_15K, "version": V1},
         EATaskStatistics(
-            num_rel_triples_left=47676,
-            num_rel_triples_right=50419,
-            num_attr_triples_left=62403,
-            num_attr_triples_right=133776,
+            num_rel_triples=(47676, 50419),
+            num_attr_triples=(62403, 133776),
             num_ent_links=15000,
+            num_intra_ent_links=(0, 0),
         ),
     ),
     (
         {"graph_pair": EN_DE, "size": SIZE_15K, "version": V2},
         EATaskStatistics(
-            num_rel_triples_left=84867,
-            num_rel_triples_right=92632,
-            num_attr_triples_left=59511,
-            num_attr_triples_right=161315,
+            num_rel_triples=(84867, 92632),
+            num_attr_triples=(59511, 161315),
             num_ent_links=15000,
+            num_intra_ent_links=(0, 0),
         ),
     ),
     (
         {"graph_pair": EN_FR, "size": SIZE_15K, "version": V1},
         EATaskStatistics(
-            num_rel_triples_left=47334,
-            num_rel_triples_right=40864,
-            num_attr_triples_left=57164,
-            num_attr_triples_right=54401,
+            num_rel_triples=(47334, 40864),
+            num_attr_triples=(57164, 54401),
             num_ent_links=15000,
+            num_intra_ent_links=(0, 0),
         ),
     ),
     (
         {"graph_pair": EN_FR, "size": SIZE_15K, "version": V2},
         EATaskStatistics(
-            num_rel_triples_left=96318,
-            num_rel_triples_right=80112,
-            num_attr_triples_left=52396,
-            num_attr_triples_right=56114,
+            num_rel_triples=(96318, 80112),
+            num_attr_triples=(52396, 56114),
             num_ent_links=15000,
+            num_intra_ent_links=(0, 0),
         ),
     ),
     (
         {"graph_pair": D_W, "size": SIZE_100K, "version": V1},
         EATaskStatistics(
-            num_rel_triples_left=293990,
-            num_rel_triples_right=251708,
-            num_attr_triples_left=334911,
-            num_attr_triples_right=687860,
+            num_rel_triples=(293990, 251708),
+            num_attr_triples=(334911, 687860),
             num_ent_links=100000,
+            num_intra_ent_links=(0, 0),
         ),
     ),
     (
         {"graph_pair": D_W, "size": SIZE_100K, "version": V2},
         EATaskStatistics(
-            num_rel_triples_left=616457,
-            num_rel_triples_right=588203,
-            num_attr_triples_left=360696,
-            num_attr_triples_right=878219,
+            num_rel_triples=(616457, 588203),
+            num_attr_triples=(360696, 878219),
             num_ent_links=100000,
+            num_intra_ent_links=(0, 0),
         ),
     ),
     (
         {"graph_pair": D_Y, "size": SIZE_100K, "version": V1},
         EATaskStatistics(
-            num_rel_triples_left=294188,
-            num_rel_triples_right=400518,
-            num_attr_triples_left=360415,
-            num_attr_triples_right=649787,
+            num_rel_triples=(294188, 400518),
+            num_attr_triples=(360415, 649787),
             num_ent_links=100000,
+            num_intra_ent_links=(0, 0),
         ),
     ),
     (
         {"graph_pair": D_Y, "size": SIZE_100K, "version": V2},
         EATaskStatistics(
-            num_rel_triples_left=576547,
-            num_rel_triples_right=865265,
-            num_attr_triples_left=374785,
-            num_attr_triples_right=755161,
+            num_rel_triples=(576547, 865265),
+            num_attr_triples=(374785, 755161),
             num_ent_links=100000,
+            num_intra_ent_links=(0, 0),
         ),
     ),
     (
         {"graph_pair": EN_DE, "size": SIZE_100K, "version": V1},
         EATaskStatistics(
-            num_rel_triples_left=335359,
-            num_rel_triples_right=336240,
-            num_attr_triples_left=423666,
-            num_attr_triples_right=586207,
+            num_rel_triples=(335359, 336240),
+            num_attr_triples=(423666, 586207),
             num_ent_links=100000,
+            num_intra_ent_links=(0, 0),
         ),
     ),
     (
         {"graph_pair": EN_DE, "size": SIZE_100K, "version": V2},
         EATaskStatistics(
-            num_rel_triples_left=622588,
-            num_rel_triples_right=629395,
-            num_attr_triples_left=430752,
-            num_attr_triples_right=656458,
+            num_rel_triples=(622588, 629395),
+            num_attr_triples=(430752, 656458),
             num_ent_links=100000,
+            num_intra_ent_links=(0, 0),
         ),
     ),
     (
         {"graph_pair": EN_FR, "size": SIZE_100K, "version": V1},
         EATaskStatistics(
-            num_rel_triples_left=309607,
-            num_rel_triples_right=258285,
-            num_attr_triples_left=384248,
-            num_attr_triples_right=340725,
+            num_rel_triples=(309607, 258285),
+            num_attr_triples=(384248, 340725),
             num_ent_links=100000,
+            num_intra_ent_links=(0, 0),
         ),
     ),
     (
         {"graph_pair": EN_FR, "size": SIZE_100K, "version": V2},
         EATaskStatistics(
-            num_rel_triples_left=649902,
-            num_rel_triples_right=561391,
-            num_attr_triples_left=396150,
-            num_attr_triples_right=342768,
+            num_rel_triples=(649902, 561391),
+            num_attr_triples=(396150, 342768),
             num_ent_links=100000,
+            num_intra_ent_links=(0, 0),
         ),
     ),
 ]
@@ -177,10 +161,10 @@ statistics_with_params = [
 @pytest.mark.parametrize(("params", "statistic"), statistics_with_params)
 def test_open_ea(params: Dict, statistic: EATaskStatistics):
     ds = OpenEA(**params, use_cache=False)
-    assert len(ds.rel_triples_left) == statistic.num_rel_triples_left
-    assert len(ds.rel_triples_right) == statistic.num_rel_triples_right
-    assert len(ds.attr_triples_left) == statistic.num_attr_triples_left
-    assert len(ds.attr_triples_right) == statistic.num_attr_triples_right
+    assert len(ds.rel_triples_left) == statistic.num_rel_triples[0]
+    assert len(ds.rel_triples_right) == statistic.num_rel_triples[1]
+    assert len(ds.attr_triples_left) == statistic.num_attr_triples[0]
+    assert len(ds.attr_triples_right) == statistic.num_attr_triples[1]
     assert len(ds.ent_links) == statistic.num_ent_links
     assert ds.folds is not None
     assert len(ds.folds) == 5

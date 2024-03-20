@@ -1,13 +1,17 @@
+import pathlib
+from collections import OrderedDict
 from typing import Iterable, Optional
 
 import dask.bag as db
 import dask.dataframe as dd
 import pandas as pd
 import pytest
+from eche import ClusterHelper, PrefixedClusterHelper
 from moviegraphbenchmark.loading import ERData, Fold
 from strawman import dummy_df, dummy_triples
 from util import EATaskStatistics
 
+from sylloge.moviegraph_benchmark_loader import GP_TO_DS_PREFIX, GraphPair
 from sylloge.typing import EA_SIDE_LEFT, EA_SIDE_RIGHT, EA_SIDES
 
 
@@ -20,11 +24,10 @@ class ResourceMocker:
     ):
         if statistic is None:
             self.statistic = EATaskStatistics(
-                num_rel_triples_left=15,
-                num_rel_triples_right=15,
-                num_attr_triples_left=15,
-                num_attr_triples_right=15,
+                num_rel_triples=(15, 15),
+                num_attr_triples=(15, 15),
                 num_ent_links=15,
+                num_intra_ent_links=(0, 0),
             )
         else:
             self.statistic = statistic
@@ -34,8 +37,37 @@ class ResourceMocker:
     def mock_read(self, path: str, names: Iterable):
         return self.mock_read_zipfile_csv(path="", inner_path=path)
 
-    def mock_load_data(self, pair: str, data_path: str) -> ERData:
+    def mock_clusterhelper_from_file(self, path: str, ds_prefixes: OrderedDict):
         ent_links = self.mock_read_zipfile_csv("ent_links")
+        ent_links = self._add_prefixes(ent_links, ds_prefixes)
+        if len(ds_prefixes) == 2:
+            return PrefixedClusterHelper.from_numpy(
+                ent_links.to_numpy(), ds_prefixes=ds_prefixes
+            )
+        middle = dummy_df(
+            (int(len(ent_links) / 3), 1), columns=["middle"], content_length=50
+        )
+        mpref = tuple(ds_prefixes.values())[2]
+        middle["middle"] = mpref + middle["middle"]
+        clusters = []
+        for idx, (lp, rp) in enumerate(ent_links.itertuples(index=False, name=None)):
+            if idx < len(middle):
+                clusters.append({lp, rp, middle.iloc[idx].to_numpy()[0]})
+            else:
+                clusters.append({lp, rp})
+        return PrefixedClusterHelper(clusters, ds_prefixes=ds_prefixes)
+
+    def _add_prefixes(
+        self, ent_links: pd.DataFrame, ds_prefixes: OrderedDict
+    ) -> pd.DataFrame:
+        left_pref, right_pref = tuple(ds_prefixes.values())[:2]
+        ent_links["left"] = left_pref + ent_links["left"]
+        ent_links["right"] = right_pref + ent_links["right"]
+        return ent_links
+
+    def mock_load_data(self, pair: GraphPair, data_path: str) -> ERData:
+        ent_links = self.mock_read_zipfile_csv("ent_links")
+        ent_links = self._add_prefixes(ent_links, GP_TO_DS_PREFIX[pair])
         train_links = ent_links[:2]
         test_links = ent_links[2:5]
         valid_links = ent_links[5:]
@@ -55,41 +87,77 @@ class ResourceMocker:
             ],
         )
 
+    def mock_read_zipfile_csv_multi(self, inner_path: str, **kwargs) -> pd.DataFrame:
+        inner_path = pathlib.Path(inner_path).name
+        if inner_path.startswith("rel_triples"):
+            idx = int(inner_path.replace("rel_triples_", "")) - 1
+            statistic = int(self.statistic.num_rel_triples[idx] * self.fraction)
+        elif inner_path.startswith("attr_triples"):
+            idx = int(inner_path.replace("attr_triples_", "")) - 1
+            statistic = int(self.statistic.num_attr_triples[idx] * self.fraction)
+        else:
+            raise ValueError(f"Unknown case {inner_path}!")
+        return dummy_triples(
+            statistic,
+            entity_prefix=f"ds_{idx}",
+            seed=self.seed,
+        )
+
     def mock_read_zipfile_csv(self, inner_path: str, **kwargs) -> pd.DataFrame:
         if "rel_triples_1" in inner_path:
             return dummy_triples(
-                int(self.statistic.num_rel_triples_left * self.fraction),
+                int(self.statistic.num_rel_triples[0] * self.fraction),
                 entity_prefix=EA_SIDE_LEFT,
                 seed=self.seed,
             )
         if "rel_triples_2" in inner_path:
             return dummy_triples(
-                int(self.statistic.num_rel_triples_right * self.fraction),
+                int(self.statistic.num_rel_triples[1] * self.fraction),
                 entity_prefix=EA_SIDE_RIGHT,
                 seed=self.seed,
             )
         if "attr_triples_1" in inner_path:
             return dummy_triples(
-                int(self.statistic.num_attr_triples_left * self.fraction),
+                int(self.statistic.num_attr_triples[0] * self.fraction),
                 entity_prefix=EA_SIDE_LEFT,
                 relation_triples=False,
                 seed=self.seed,
             )
         if "attr_triples_2" in inner_path:
             return dummy_triples(
-                int(self.statistic.num_attr_triples_right * self.fraction),
+                int(self.statistic.num_attr_triples[1] * self.fraction),
                 entity_prefix=EA_SIDE_RIGHT,
                 relation_triples=False,
                 seed=self.seed,
             )
-        if "_links" in inner_path:
+        if "ent_links" in inner_path:
             return dummy_df(
-                shape=(int(self.statistic.num_ent_links * self.fraction), 2),
+                (int(self.statistic.num_ent_links * self.fraction), 2),
                 content_length=100,
                 columns=list(EA_SIDES),
                 seed=self.seed,
             )
         raise ValueError("Unknown case!")
+
+    def mock_cluster_helper_from_zipped_file(self, *args, **kwargs):
+        if "ds_prefixes" in kwargs:
+            dataset_names = list(kwargs["ds_prefixes"])
+            ds_prefixes = list(kwargs["ds_prefixes"].values())
+            pairs = [
+                {f"{pref}_{idx}" for pref in ds_prefixes}
+                for idx in range(int(self.statistic.num_ent_links * self.fraction))
+            ]
+            return PrefixedClusterHelper(
+                data=pairs, ds_prefixes=OrderedDict(zip(dataset_names, ds_prefixes))
+            )
+        return ClusterHelper.from_numpy(
+            dummy_df(
+                shape=(int(self.statistic.num_ent_links * self.fraction), 2),
+                content_length=100,
+                columns=list(EA_SIDES),
+                seed=self.seed,
+            ).to_numpy()
+        )
 
     def mock_read_dask_bag_from_archive_text(
         self, archive_path: str, inner_path: str, protocol: str
@@ -146,6 +214,13 @@ class ResourceMocker:
     def mock_read_dask_df_archive_csv(self, inner_path: str, **kwargs) -> dd.DataFrame:
         return dd.from_pandas(
             self.mock_read_zipfile_csv(inner_path=inner_path), npartitions=1
+        )
+
+    def mock_read_dask_df_archive_csv_multi(
+        self, inner_path: str, **kwargs
+    ) -> dd.DataFrame:
+        return dd.from_pandas(
+            self.mock_read_zipfile_csv_multi(inner_path=inner_path), npartitions=1
         )
 
     def assert_not_called(self, **kwargs):

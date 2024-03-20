@@ -781,14 +781,14 @@ traitlets = "*"
 
 [[package]]
 name = "moviegraphbenchmark"
-version = "1.0.2"
+version = "1.1.0"
 description = "Benchmark datasets for Entity Resolution on Knowledge Graphs containing information about movies, tv shows and persons from IMDB,TMDB and TheTVDB"
 category = "main"
 optional = false
-python-versions = ">=3.7.1"
+python-versions = ">=3.8"
 files = [
-    {file = "moviegraphbenchmark-1.0.2-py3-none-any.whl", hash = "sha256:563950280c237d78ebf9662bad376872744487268edf113df2d146d41d3e0951"},
-    {file = "moviegraphbenchmark-1.0.2.tar.gz", hash = "sha256:b3d9771328e74b4897ecaa9dd620d8da6a314d35b5962d1955c3703af5f61144"},
+    {file = "moviegraphbenchmark-1.1.0-py3-none-any.whl", hash = "sha256:91d8cd05000f5d2310e3d526ceff7403ec494ff9929a6c26e1700c326f63dd37"},
+    {file = "moviegraphbenchmark-1.1.0.tar.gz", hash = "sha256:d16da553732e6696250cdb4ceb85201de155bd424509546935c0bb947ce893f5"},
 ]
 
 [package.dependencies]
@@ -1956,4 +1956,4 @@ docs = ["Sphinx", "insegel", "sphinx-automodapi", "sphinx-autodoc-typehints"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<4.0"
-content-hash = "46ffa23428fdaf03d06f39f07e087e12eb27881234c1fd918b10ac5466631be6"
+content-hash = "2de369d6b8b4bc37ece200e140efc69659db97f30ca0cd9185fda71e51ca4cbf"

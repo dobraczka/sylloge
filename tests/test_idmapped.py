@@ -115,11 +115,9 @@ def example() -> Tuple[BinaryEADataset, Dict[str, int], Dict[str, int], Dict[str
 
     return (
         BinaryEADataset(
-            rel_triples_left=left_rel,
-            rel_triples_right=right_rel,
-            attr_triples_left=left_attr,
-            attr_triples_right=right_attr,
-            ent_links=entity_links,
+            rel_triples=[left_rel, right_rel],
+            attr_triples=[left_attr, right_attr],
+            ent_links=ClusterHelper.from_numpy(entity_links.to_numpy()),
             folds=folds,
             dataset_names=("A", "B"),
         ),

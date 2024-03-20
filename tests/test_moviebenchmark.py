@@ -90,10 +90,14 @@ def test_movie_benchmark(params: Dict, statistic: EATaskStatistics):
 
 @pytest.mark.parametrize(("params", "statistic"), statistics_with_params)
 def test_movie_benchmark_mock(
-    params: Dict, statistic: EATaskStatistics, mocker, tmpdir, tmp_path
+    params: Dict, statistic: EATaskStatistics, mocker, tmp_path
 ):
     rm = ResourceMocker(statistic=statistic, fraction=0.1)
     mocker.patch("sylloge.moviegraph_benchmark_loader.load_data", rm.mock_load_data)
+    mocker.patch(
+        "sylloge.moviegraph_benchmark_loader.PrefixedClusterHelper.from_file",
+        rm.mock_clusterhelper_from_file,
+    )
     for use_cache, cache_exists in [(False, False), (True, False), (True, True)]:
         if cache_exists:
             # ensure this method doesn't get called
