@@ -43,6 +43,7 @@ statistics_with_params = [
             num_attr_triples=(20800, 23761, 20902),
             num_ent_links=3598,
             num_intra_ent_links=(1, 64, 22663),
+            num_total_links=31230,
         ),
     ),
 ]
@@ -76,6 +77,10 @@ def test_movie_benchmark(params: Dict, statistic: EATaskStatistics):
     for idx in range(len(statistic.num_rel_triples)):
         assert len(ds.rel_triples[idx]) == statistic.num_rel_triples[idx]
         assert len(ds.attr_triples[idx]) == statistic.num_attr_triples[idx]
+    if statistic.num_total_links:
+        assert ds.ent_links.number_of_links == statistic.num_total_links
+        assert len(ds.ent_links) == statistic.num_ent_links
+    else:
         total_links = statistic.num_ent_links + sum(statistic.num_intra_ent_links)
         assert ds.ent_links.number_of_links == total_links
         assert ds.ent_links.number_of_no_intra_links == statistic.num_ent_links

@@ -12,6 +12,7 @@ Datasets
     sylloge.MovieGraphBenchmark
     sylloge.OpenEA
     sylloge.OAEI
+    sylloge.MED_BBK
 
 
 Base
@@ -20,10 +21,16 @@ Base
    :nosignatures:
 
     sylloge.base.TrainTestValSplit
-    sylloge.base.EADataset
+    sylloge.base.MultiSourceEADataset
+    sylloge.base.ParquetEADataset
     sylloge.base.CacheableEADataset
     sylloge.base.ZipEADataset
     sylloge.base.ZipEADatasetWithPreSplitFolds
+    sylloge.base.BinaryEADataset
+    sylloge.base.BinaryParquetEADataset
+    sylloge.base.BinaryCacheableEADataset
+    sylloge.base.BinaryZipEADataset
+    sylloge.base.BinaryZipEADatasetWithPreSplitFolds
 
 
 IdMapped

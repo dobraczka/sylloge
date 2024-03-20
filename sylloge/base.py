@@ -332,6 +332,13 @@ class ParquetEADataset(MultiSourceEADataset[DataFrameType]):
             ("attr_triples", cls._ATTR_TRIPLES_PATH),
         ]:
             table_glob = f"{path.joinpath(table_prefix).absolute()}_*_parquet"
+            glob_list = list(glob(table_glob))
+            if glob_list[0].endswith("left_parquet") or glob_list[0].endswith(
+                "right_parquet"
+            ):
+                raise ValueError(
+                    f"Detected files with old (older than version 0.3.0) cache format in {path}! Please delete the files in this folder and re-create the cache!"
+                )
 
             # sort by infix in file name
             for table_path in sorted(
@@ -438,7 +445,7 @@ class CacheableEADataset(ParquetEADataset[DataFrameType]):
     def __init__(
         self: "CacheableEADataset[pd.DataFrame]",
         *,
-        cache_path: pathlib.Path,
+        cache_path: Union[str, pathlib.Path],
         use_cache: bool = True,
         parquet_load_options: Optional[Mapping] = None,
         parquet_store_options: Optional[Mapping] = None,
@@ -452,7 +459,7 @@ class CacheableEADataset(ParquetEADataset[DataFrameType]):
     def __init__(
         self: "CacheableEADataset[dd.DataFrame]",
         *,
-        cache_path: pathlib.Path,
+        cache_path: Union[str, pathlib.Path],
         use_cache: bool = True,
         parquet_load_options: Optional[Mapping] = None,
         parquet_store_options: Optional[Mapping] = None,
@@ -465,7 +472,7 @@ class CacheableEADataset(ParquetEADataset[DataFrameType]):
     def __init__(
         self,
         *,
-        cache_path: pathlib.Path,
+        cache_path: Union[str, pathlib.Path],
         use_cache: bool = True,
         parquet_load_options: Optional[Mapping] = None,
         parquet_store_options: Optional[Mapping] = None,
@@ -482,6 +489,8 @@ class CacheableEADataset(ParquetEADataset[DataFrameType]):
         :param backend: Whether to use pandas or dask for reading/writing
         :param init_kwargs: other arguments for creating the EADataset instance
         """
+        if isinstance(cache_path, str):
+            cache_path = pathlib.Path(cache_path)
         self.cache_path = cache_path
         self.parquet_load_options = parquet_load_options or {}
         self.parquet_store_options = parquet_store_options or {}
@@ -514,7 +523,7 @@ class CacheableEADataset(ParquetEADataset[DataFrameType]):
         self,
         pystow_module: pystow.Module,
         inner_cache_path: str,
-        cache_path: Optional[pathlib.Path] = None,
+        cache_path: Optional[Union[str, pathlib.Path]] = None,
     ) -> pathlib.Path:
         """Use either pystow module or cache_path to create cache path.
 
@@ -525,6 +534,8 @@ class CacheableEADataset(ParquetEADataset[DataFrameType]):
         """
         if cache_path is None:
             return pystow_module.join("cached", inner_cache_path, ensure_exists=False)
+        if isinstance(cache_path, str):
+            cache_path = pathlib.Path(cache_path)
         return cache_path.joinpath(inner_cache_path)
 
     def load_from_cache(
@@ -848,25 +859,45 @@ class BinaryEADataset(MultiSourceEADataset[DataFrameType]):
     def attr_triples_right(self) -> DataFrameType:
         return self.attr_triples[1]
 
+    def _binary_repr_adjustment(self, repr_str: str) -> str:
+        return repr_str.replace("triples_0", "triples_left").replace(
+            "triples_1", "triples_right"
+        )
+
+    def __repr__(self) -> str:
+        return self._binary_repr_adjustment(super().__repr__())
+
 
 class BinaryParquetEADataset(
     ParquetEADataset[DataFrameType], BinaryEADataset[DataFrameType]
 ):
     """Binary version of ParquetEADataset."""
 
+    def __repr__(self) -> str:
+        return self._binary_repr_adjustment(super().__repr__())
+
 
 class BinaryCacheableEADataset(CacheableEADataset[DataFrameType], BinaryEADataset):
     """Binary version of CacheableEADataset."""
 
+    def __repr__(self) -> str:
+        return self._binary_repr_adjustment(super().__repr__())
+
 
 class BinaryZipEADataset(ZipEADataset[DataFrameType], BinaryEADataset):
     """Binary version of ZipEADataset."""
+
+    def __repr__(self) -> str:
+        return self._binary_repr_adjustment(super().__repr__())
 
 
 class BinaryZipEADatasetWithPreSplitFolds(
     ZipEADatasetWithPreSplitFolds[DataFrameType], BinaryEADataset
 ):
     """Binary version of ZipEADataset."""
+
+    def __repr__(self) -> str:
+        return self._binary_repr_adjustment(super().__repr__())
 
 
 def create_statistics_df(

@@ -1,7 +1,7 @@
 import os
 import pathlib
 from collections import OrderedDict
-from typing import Dict, Literal, Optional, Tuple
+from typing import Dict, Literal, Optional, Tuple, Union
 
 import pandas as pd
 from eche import PrefixedClusterHelper
@@ -59,7 +59,7 @@ class MovieGraphBenchmark(CacheableEADataset[pd.DataFrame]):
         self,
         graph_pair: GraphPair = "imdb-tmdb",
         use_cache: bool = True,
-        cache_path: Optional[pathlib.Path] = None,
+        cache_path: Optional[Union[str, pathlib.Path]] = None,
     ):
         """Initialize a MovieGraphBenchmark dataset.
 

@@ -261,7 +261,7 @@ class OAEI(BinaryCacheableEADataset[dd.DataFrame]):
         self,
         task: OAEI_TASK_NAME = "starwars-swg",
         use_cache: bool = True,
-        cache_path: Optional[pathlib.Path] = None,
+        cache_path: Optional[Union[str, pathlib.Path]] = None,
     ):
         """Initialize a OAEI Knowledge Graph Track task.
 

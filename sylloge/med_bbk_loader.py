@@ -1,5 +1,5 @@
 import pathlib
-from typing import Any, Dict, Literal, Optional, overload
+from typing import Any, Dict, Literal, Optional, Union, overload
 
 import dask.dataframe as dd
 import pandas as pd
@@ -34,7 +34,7 @@ class MED_BBK(BinaryZipEADataset[DataFrameType]):
         self: "MED_BBK[pd.DataFrame]",
         backend: Literal["pandas"] = "pandas",
         use_cache: bool = True,
-        cache_path: Optional[pathlib.Path] = None,
+        cache_path: Optional[Union[str, pathlib.Path]] = None,
     ):
         ...
 
@@ -43,7 +43,7 @@ class MED_BBK(BinaryZipEADataset[DataFrameType]):
         self: "MED_BBK[dd.DataFrame]",
         backend: Literal["dask"] = "dask",
         use_cache: bool = True,
-        cache_path: Optional[pathlib.Path] = None,
+        cache_path: Optional[Union[str, pathlib.Path]] = None,
     ):
         ...
 
@@ -51,7 +51,7 @@ class MED_BBK(BinaryZipEADataset[DataFrameType]):
         self,
         backend: BACKEND_LITERAL = "pandas",
         use_cache: bool = True,
-        cache_path: Optional[pathlib.Path] = None,
+        cache_path: Optional[Union[str, pathlib.Path]] = None,
     ):
         """Initialize an MED-BBK dataset.
 

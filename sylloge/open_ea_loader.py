@@ -1,7 +1,7 @@
 # largely adapted from pykeen.datasets.ea.openea
 import pathlib
 from types import MappingProxyType
-from typing import Literal, Optional, Tuple, overload
+from typing import Literal, Optional, Tuple, Union, overload
 
 import dask.dataframe as dd
 import pandas as pd
@@ -84,7 +84,7 @@ class OpenEA(BinaryZipEADatasetWithPreSplitFolds[DataFrameType]):
         version: GraphVersion = "V1",
         backend: Literal["pandas"] = "pandas",
         use_cache: bool = True,
-        cache_path: Optional[pathlib.Path] = None,
+        cache_path: Optional[Union[str, pathlib.Path]] = None,
     ):
         ...
 
@@ -96,7 +96,7 @@ class OpenEA(BinaryZipEADatasetWithPreSplitFolds[DataFrameType]):
         version: GraphVersion = "V1",
         backend: Literal["dask"] = "dask",
         use_cache: bool = True,
-        cache_path: Optional[pathlib.Path] = None,
+        cache_path: Optional[Union[str, pathlib.Path]] = None,
     ):
         ...
 
@@ -107,7 +107,7 @@ class OpenEA(BinaryZipEADatasetWithPreSplitFolds[DataFrameType]):
         version: GraphVersion = "V1",
         backend: BACKEND_LITERAL = "pandas",
         use_cache: bool = True,
-        cache_path: Optional[pathlib.Path] = None,
+        cache_path: Optional[Union[str, pathlib.Path]] = None,
     ):
         """Initialize an OpenEA dataset.
 
