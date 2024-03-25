@@ -23,13 +23,42 @@ This simple library aims to collect entity-alignment benchmark datasets and make
     # 2  http://dbpedia.org/resource/E840454  http://dbpedia.org/ontology/activeYearsStartYear     1948^^<http://www.w3.org/2001/XMLSchema#gYear>
     # 3  http://dbpedia.org/resource/E971710       http://purl.org/dc/elements/1.1/description                          English singer-songwriter
     # 4  http://dbpedia.org/resource/E022831       http://dbpedia.org/ontology/militaryCommand                     Commandant of the Marine Corps
-    print(ds.ent_links.head())
-    #                                   left                                    right
-    # 0  http://dbpedia.org/resource/E123186    http://www.wikidata.org/entity/Q21197
-    # 1  http://dbpedia.org/resource/E228902  http://www.wikidata.org/entity/Q5909974
-    # 2  http://dbpedia.org/resource/E718575   http://www.wikidata.org/entity/Q707008
-    # 3  http://dbpedia.org/resource/E469216  http://www.wikidata.org/entity/Q1471945
-    # 4  http://dbpedia.org/resource/E649433  http://www.wikidata.org/entity/Q1198381
+
+The gold standard entity links are stored as [eche](https://github.com/dobraczka/eche) ClusterHelper, which provides convenient functionalities:
+
+.. code-block:: python
+
+    print(ds.ent_links.clusters[0])
+    # {'http://www.wikidata.org/entity/Q21197', 'http://dbpedia.org/resource/E123186'}
+    print(('http://www.wikidata.org/entity/Q21197', 'http://dbpedia.org/resource/E123186') in ds.ent_links)
+    # True
+    print(('http://dbpedia.org/resource/E123186', 'http://www.wikidata.org/entity/Q21197') in ds.ent_links)
+    # True
+    print(ds.ent_links.links('http://www.wikidata.org/entity/Q21197'))
+    # 'http://dbpedia.org/resource/E123186'
+    print(ds.ent_links.all_pairs())
+    # <itertools.chain object at 0x7f92c6287c10>
+
+Most datasets are binary matching tasks, but for example the `MovieGraphBenchmark` provides a multi-source setting:
+
+.. code-block:: python
+
+    ds = MovieGraphBenchmark(graph_pair="multi")
+    print(ds)
+    MovieGraphBenchmark(backend=pandas,graph_pair=multi, rel_triples_0=17507, attr_triples_0=20800 rel_triples_1=27903, attr_triples_1=23761 rel_triples_2=15455, attr_triples_2=20902, ent_links=3598, folds=5)
+    print(ds.dataset_names)
+    ('imdb', 'tmdb', 'tvdb')
+
+Here the [`PrefixedClusterHelper`](https://eche.readthedocs.io/en/latest/reference/eche/#eche.PrefixedClusterHelper) various convenience functions:
+
+.. code-block:: python
+    # Get pairs between specific dataset pairs
+    print(list(ds.ent_links.pairs_in_ds_tuple(("imdb","tmdb")))[0])
+    # ('https://www.scads.de/movieBenchmark/resource/IMDB/nm0641721', 'https://www.scads.de/movieBenchmark/resource/TMDB/person1236714')
+
+    # Get number of intra-dataset pairs
+    print(ds.ent_links.number_of_intra_links)
+    # (1, 64, 22663)
 
 You can get a canonical name for a dataset instance to use e.g. to create folders to store experiment results:
 
