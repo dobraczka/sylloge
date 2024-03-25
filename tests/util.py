@@ -1,9 +1,9 @@
-from typing import NamedTuple
+from typing import NamedTuple, Optional, Tuple
 
 
-class DatasetStatistics(NamedTuple):
-    num_rel_triples_left: int
-    num_rel_triples_right: int
-    num_attr_triples_left: int
-    num_attr_triples_right: int
+class EATaskStatistics(NamedTuple):
+    num_rel_triples: Tuple[int, ...]
+    num_attr_triples: Tuple[int, ...]
     num_ent_links: int
+    num_intra_ent_links: Tuple[int, ...]
+    num_total_links: Optional[int] = None

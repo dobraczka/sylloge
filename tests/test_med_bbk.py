@@ -14,4 +14,3 @@ def test_med_bbk():
 
     # check if switch was correct
     assert "集聚肠杆菌感染" in set(ds.rel_triples_right["head"])
-    assert "集聚肠杆菌感染" in set(ds.ent_links["right"])

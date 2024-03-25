@@ -21,6 +21,12 @@ def test_oaei_mock(task, mocker, tmp_path):
         "sylloge.oaei_loader.read_dask_bag_from_archive_text",
         rm.mock_read_dask_bag_from_archive_text,
     )
+
+    mocker.patch("sylloge.oaei_loader.OAEI_MODULE.ensure", rm.mock_ensure)
+    mocker.patch(
+        "sylloge.base.PrefixedClusterHelper.from_file",
+        rm.mock_cluster_helper_from_zipped_file,
+    )
     for use_cache, cache_exists in [(False, False), (True, False), (True, True)]:
         if cache_exists:
             # ensure this method doesn't get called
@@ -38,3 +44,4 @@ def test_oaei_mock(task, mocker, tmp_path):
         assert ds.ent_links is not None
         assert ds.dataset_names == tuple(task.split("-"))
         assert isinstance(ds.rel_triples_left, dd.DataFrame)
+        assert ds._ds_prefixes is not None

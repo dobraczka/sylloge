@@ -4,8 +4,20 @@ from typing import Dict, Iterable, Mapping, Optional, Sequence, Tuple
 import numpy as np
 import pandas as pd
 
-from .base import EADataset, TrainTestValSplit
 from .utils import fix_dataclass_init_docs
+
+
+@fix_dataclass_init_docs
+@dataclass
+class PandasTrainTestValSplit:
+    """Dataclass holding split of gold standard entity links."""
+
+    #: entity links for training
+    train: pd.DataFrame
+    #: entity links for testing
+    test: pd.DataFrame
+    #: entity links for validation
+    val: pd.DataFrame
 
 
 def enhance_mapping(
@@ -174,24 +186,24 @@ class IdMappedEADataset:
         attr_triples_left: pd.DataFrame,
         attr_triples_right: pd.DataFrame,
         ent_links: pd.DataFrame,
-        folds: Optional[Sequence[TrainTestValSplit]],
+        folds: Optional[Sequence[PandasTrainTestValSplit]] = None,
     ) -> "IdMappedEADataset":
-        rel_triples_left, entity_mapping, rel_mapping = id_map_rel_triples(
+        id_rel_triples_left, entity_mapping, rel_mapping = id_map_rel_triples(
             rel_triples_left
         )
-        rel_triples_right, entity_mapping, rel_mapping = id_map_rel_triples(
+        id_rel_triples_right, entity_mapping, rel_mapping = id_map_rel_triples(
             rel_triples_right,
             entity_mapping=entity_mapping,
             rel_mapping=rel_mapping,
         )
         (
-            attr_triples_left,
+            id_attr_triples_left,
             entity_mapping,
             attr_rel_mapping,
             attr_mapping,
         ) = _id_map_attr_triples(attr_triples_left, entity_mapping=entity_mapping)
         (
-            attr_triples_right,
+            id_attr_triples_right,
             entity_mapping,
             attr_rel_mapping,
             attr_mapping,
@@ -202,7 +214,7 @@ class IdMappedEADataset:
             attr_mapping=attr_mapping,
         )
 
-        ent_links = _map_links(ent_links, entity_mapping)
+        id_ent_links = _map_links(ent_links, entity_mapping)
         new_folds = None
         if folds:
             new_folds = []
@@ -214,25 +226,14 @@ class IdMappedEADataset:
                     IdMappedTrainTestValSplit(train=train, test=test, val=val)
                 )
         return cls(
-            rel_triples_left=rel_triples_left,
-            rel_triples_right=rel_triples_right,
-            attr_triples_left=attr_triples_left,
-            attr_triples_right=attr_triples_right,
-            ent_links=ent_links,
+            rel_triples_left=id_rel_triples_left,
+            rel_triples_right=id_rel_triples_right,
+            attr_triples_left=id_attr_triples_left,
+            attr_triples_right=id_attr_triples_right,
+            ent_links=id_ent_links,
             entity_mapping=entity_mapping,
             rel_mapping=rel_mapping,
             attr_rel_mapping=attr_rel_mapping,
             attr_mapping=attr_mapping,
             folds=new_folds,
-        )
-
-    @classmethod
-    def from_ea_dataset(cls, dataset: EADataset) -> "IdMappedEADataset":
-        return IdMappedEADataset.from_frames(
-            rel_triples_left=dataset.rel_triples_left,
-            rel_triples_right=dataset.rel_triples_right,
-            attr_triples_left=dataset.attr_triples_left,
-            attr_triples_right=dataset.attr_triples_right,
-            ent_links=dataset.ent_links,
-            folds=dataset.folds,
         )

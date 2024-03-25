@@ -1,7 +1,7 @@
 # largely adapted from pykeen.datasets.ea.openea
 import pathlib
 from types import MappingProxyType
-from typing import Literal, Optional, Tuple, overload
+from typing import Literal, Optional, Tuple, Union, overload
 
 import dask.dataframe as dd
 import pandas as pd
@@ -9,8 +9,8 @@ import pandas as pd
 from .base import (
     BACKEND_LITERAL,
     BASE_DATASET_MODULE,
+    BinaryZipEADatasetWithPreSplitFolds,
     DataFrameType,
-    ZipEADatasetWithPreSplitFolds,
 )
 
 OPEN_EA_MODULE = BASE_DATASET_MODULE.module("open_ea")
@@ -36,7 +36,7 @@ V2: GraphVersion = "V2"
 GRAPH_VERSIONS = (V1, V2)
 
 
-class OpenEA(ZipEADatasetWithPreSplitFolds[DataFrameType]):
+class OpenEA(BinaryZipEADatasetWithPreSplitFolds[DataFrameType]):
     """Class containing the OpenEA dataset family.
 
     Published in `Sun, Z. et. al. (2020) A Benchmarking Study of Embedding-based Entity Alignment for Knowledge Graphs <http://www.vldb.org/pvldb/vol13/p2326-sun.pdf>`_,
@@ -61,6 +61,21 @@ class OpenEA(ZipEADatasetWithPreSplitFolds[DataFrameType]):
         }
     )
 
+    _GRAPH_PAIR_TO_PREFIXES = MappingProxyType(
+        {
+            "D_W": ("http://dbpedia.org/resource/", "http://www.wikidata.org/entity/"),
+            "D_Y": ("http://dbpedia.org/resource/", "YAGO/"),
+            "EN_DE": (
+                "http://dbpedia.org/resource/",
+                "http://de.dbpedia.org/resource/",
+            ),
+            "EN_FR": (
+                "http://dbpedia.org/resource/",
+                "http://fr.dbpedia.org/resource/",
+            ),
+        }
+    )
+
     @overload
     def __init__(
         self: "OpenEA[pd.DataFrame]",
@@ -69,7 +84,7 @@ class OpenEA(ZipEADatasetWithPreSplitFolds[DataFrameType]):
         version: GraphVersion = "V1",
         backend: Literal["pandas"] = "pandas",
         use_cache: bool = True,
-        cache_path: Optional[pathlib.Path] = None,
+        cache_path: Optional[Union[str, pathlib.Path]] = None,
     ):
         ...
 
@@ -81,7 +96,7 @@ class OpenEA(ZipEADatasetWithPreSplitFolds[DataFrameType]):
         version: GraphVersion = "V1",
         backend: Literal["dask"] = "dask",
         use_cache: bool = True,
-        cache_path: Optional[pathlib.Path] = None,
+        cache_path: Optional[Union[str, pathlib.Path]] = None,
     ):
         ...
 
@@ -92,7 +107,7 @@ class OpenEA(ZipEADatasetWithPreSplitFolds[DataFrameType]):
         version: GraphVersion = "V1",
         backend: BACKEND_LITERAL = "pandas",
         use_cache: bool = True,
-        cache_path: Optional[pathlib.Path] = None,
+        cache_path: Optional[Union[str, pathlib.Path]] = None,
     ):
         """Initialize an OpenEA dataset.
 
@@ -135,6 +150,7 @@ class OpenEA(ZipEADatasetWithPreSplitFolds[DataFrameType]):
             inner_path=inner_path,
             backend=backend,  # type: ignore[arg-type]
             dataset_names=OpenEA._GRAPH_PAIR_TO_DS_NAMES[graph_pair],
+            ds_prefix_tuples=OpenEA._GRAPH_PAIR_TO_PREFIXES[graph_pair],
         )
 
     @property

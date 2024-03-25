@@ -1,11 +1,28 @@
-from typing import Dict, Tuple
+from dataclasses import dataclass
+from typing import Dict, Sequence, Tuple
 
+import numpy as np
 import pandas as pd
 import pytest
 from strawman import dummy_triples
 
-from sylloge.base import EADataset, TrainTestValSplit
-from sylloge.id_mapped import IdMappedEADataset, enhance_mapping
+from sylloge.id_mapped import (
+    IdMappedEADataset,
+    PandasTrainTestValSplit,
+    enhance_mapping,
+)
+
+
+@dataclass
+class Example:
+    rel_triples: Tuple[pd.DataFrame, pd.DataFrame]
+    attr_triples: Tuple[pd.DataFrame, pd.DataFrame]
+    ent_links: pd.DataFrame
+    folds: Sequence[PandasTrainTestValSplit]
+    dataset_names: Tuple[str, str]
+    entity_mapping: Dict[str, int]
+    rel_mapping: Dict[str, int]
+    attr_rel_mapping: Dict[str, int]
 
 
 def _create_simple_mapping(
@@ -19,7 +36,7 @@ def _create_simple_mapping(
 
 
 @pytest.fixture()
-def example() -> Tuple[EADataset, Dict[str, int], Dict[str, int], Dict[str, int]]:
+def example() -> Example:
     seed = 42
     left_ent_num = 8
     left_rel_num = 6
@@ -86,8 +103,10 @@ def example() -> Tuple[EADataset, Dict[str, int], Dict[str, int], Dict[str, int]
         zip(set(left_rel["head"]), set(right_rel["head"])), columns=["left", "right"]
     )
     folds = [
-        TrainTestValSplit(
-            train=entity_links[:3], test=entity_links[3:5], val=entity_links[5:]
+        PandasTrainTestValSplit(
+            train=entity_links[:3],
+            test=entity_links[3:5],
+            val=entity_links[5:],
         )
     ]
 
@@ -110,19 +129,15 @@ def example() -> Tuple[EADataset, Dict[str, int], Dict[str, int], Dict[str, int]
         right_num=right_attr_rel_num,
     )
 
-    return (
-        EADataset(
-            rel_triples_left=left_rel,
-            rel_triples_right=right_rel,
-            attr_triples_left=left_attr,
-            attr_triples_right=right_attr,
-            ent_links=entity_links,
-            folds=folds,
-            dataset_names=("A", "B"),
-        ),
-        entity_mapping,
-        rel_mapping,
-        attr_rel_mapping,
+    return Example(
+        rel_triples=(left_rel, right_rel),
+        attr_triples=(left_attr, right_attr),
+        ent_links=entity_links,
+        folds=folds,
+        dataset_names=("A", "B"),
+        entity_mapping=entity_mapping,
+        rel_mapping=rel_mapping,
+        attr_rel_mapping=attr_rel_mapping,
     )
 
 
@@ -136,7 +151,7 @@ def test_enhance_mapping():
 
 def _assert_links(
     unmapped_links: pd.DataFrame,
-    mapped_links: pd.DataFrame,
+    mapped_links: np.ndarray,
     entity_mapping: Dict[str, int],
 ):
     assert len(unmapped_links) == len(mapped_links)
@@ -146,17 +161,23 @@ def _assert_links(
 
 
 def test_idmapped(example):
-    dataset, entity_mapping, rel_mapping, attr_rel_mapping = example
-    id_mapped_ds = IdMappedEADataset.from_ea_dataset(dataset)
+    id_mapped_ds = IdMappedEADataset.from_frames(
+        rel_triples_left=example.rel_triples[0],
+        rel_triples_right=example.rel_triples[1],
+        attr_triples_left=example.attr_triples[0],
+        attr_triples_right=example.attr_triples[1],
+        ent_links=example.ent_links,
+        folds=example.folds,
+    )
 
-    assert entity_mapping == id_mapped_ds.entity_mapping
-    assert rel_mapping == id_mapped_ds.rel_mapping
-    assert attr_rel_mapping == id_mapped_ds.attr_rel_mapping
+    assert example.entity_mapping == id_mapped_ds.entity_mapping
+    assert example.rel_mapping == id_mapped_ds.rel_mapping
+    assert example.attr_rel_mapping == id_mapped_ds.attr_rel_mapping
 
-    _assert_links(dataset.ent_links, id_mapped_ds.ent_links, entity_mapping)
+    _assert_links(example.ent_links, id_mapped_ds.ent_links, example.entity_mapping)
 
-    assert len(dataset.folds) == len(id_mapped_ds.folds)
-    for unmapped_fold, mapped_fold in zip(dataset.folds, id_mapped_ds.folds):
-        _assert_links(unmapped_fold.train, mapped_fold.train, entity_mapping)
-        _assert_links(unmapped_fold.test, mapped_fold.test, entity_mapping)
-        _assert_links(unmapped_fold.val, mapped_fold.val, entity_mapping)
+    assert len(example.folds) == len(id_mapped_ds.folds)
+    for unmapped_fold, mapped_fold in zip(example.folds, id_mapped_ds.folds):
+        _assert_links(unmapped_fold.train, mapped_fold.train, example.entity_mapping)
+        _assert_links(unmapped_fold.test, mapped_fold.test, example.entity_mapping)
+        _assert_links(unmapped_fold.val, mapped_fold.val, example.entity_mapping)
