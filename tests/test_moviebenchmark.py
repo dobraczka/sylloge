@@ -131,3 +131,6 @@ def test_movie_benchmark_mock(
             assert fold.test is not None
             assert fold.val is not None
         assert ds._ds_prefixes is not None
+        if ds.graph_pair != MULTI:
+            assert "triples_left" in ds.__repr__()
+            assert ds.rel_triples_left is not None
