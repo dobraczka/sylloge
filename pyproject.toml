@@ -6,6 +6,7 @@ authors = ["Daniel Obraczka <obraczka@informatik.uni-leipzig.de>"]
 license = "MIT"
 readme = "README.md"
 keywords = ["entity resolution", "knowledge graph", "datasets", "entity alignment"]
+classifiers = ["Development Status :: 4 - Beta", "Programming Language :: Python", "Programming Language :: Python :: 3.8", "Programming Language :: Python :: 3.9", "Programming Language :: Python :: 3.10", "Programming Language :: Python :: 3 :: Only"]
 repository = "https://github.com/dobraczka/sylloge"
 
 [tool.poetry.urls]
