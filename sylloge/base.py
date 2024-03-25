@@ -309,6 +309,7 @@ class ParquetEADataset(MultiSourceEADataset[DataFrameType]):
         with open(path.joinpath(cls._DATASET_NAMES_PATH)) as fh:
             reader = csv.reader(fh, delimiter=",", quotechar='"')
             lines = list(reader)
+            print(lines)
             dataset_names = tuple(lines[0])
             if len(lines) > 1:
                 prefixes = tuple(lines[1])
