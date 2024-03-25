@@ -150,6 +150,7 @@ class OpenEA(BinaryZipEADatasetWithPreSplitFolds[DataFrameType]):
             inner_path=inner_path,
             backend=backend,  # type: ignore[arg-type]
             dataset_names=OpenEA._GRAPH_PAIR_TO_DS_NAMES[graph_pair],
+            ds_prefix_tuples=OpenEA._GRAPH_PAIR_TO_PREFIXES[graph_pair],
         )
 
     @property

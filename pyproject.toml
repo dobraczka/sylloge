@@ -25,7 +25,7 @@ python-slugify = ">=7.0.0"
 dask = ">=2022.01.0"
 pyarrow = "*"
 moviegraphbenchmark = "^1.1.0"
-eche = {path = "../eche"}
+eche = "^0.2.1"
 
 
 [tool.poetry.group.dev.dependencies]

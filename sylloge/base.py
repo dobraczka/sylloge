@@ -30,8 +30,8 @@ from eche import ClusterHelper, PrefixedClusterHelper
 from pystow.utils import read_zipfile_csv
 from slugify import slugify
 
-from .dask import read_dask_df_archive_csv
-from .typing import (
+from .dask_utils import read_dask_df_archive_csv
+from .my_typing import (
     BACKEND_LITERAL,
     COLUMNS,
     EA_SIDES,
@@ -172,7 +172,7 @@ class ParquetEADataset(MultiSourceEADataset[DataFrameType]):
         attr_triples: Sequence[DataFrameType],
         ent_links: DataFrameType,
         dataset_names: Tuple[str, ...],
-        ds_prefixes: Optional[Tuple[str, ...]] = None,
+        ds_prefix_tuples: Optional[Tuple[str, ...]] = None,
         folds: Optional[Sequence[TrainTestValSplit]] = None,
         backend: Literal["pandas"] = "pandas",
     ):
@@ -186,7 +186,7 @@ class ParquetEADataset(MultiSourceEADataset[DataFrameType]):
         attr_triples: Sequence[DataFrameType],
         ent_links: DataFrameType,
         dataset_names: Tuple[str, ...],
-        ds_prefixes: Optional[Tuple[str, ...]] = None,
+        ds_prefix_tuples: Optional[Tuple[str, ...]] = None,
         folds: Optional[Sequence[TrainTestValSplit]] = None,
         backend: Literal["dask"] = "dask",
     ):
@@ -199,7 +199,7 @@ class ParquetEADataset(MultiSourceEADataset[DataFrameType]):
         attr_triples: Sequence[DataFrameType],
         ent_links: DataFrameType,
         dataset_names: Tuple[str, ...],
-        ds_prefixes: Optional[Tuple[str, ...]] = None,
+        ds_prefix_tuples: Optional[Tuple[str, ...]] = None,
         folds: Optional[Sequence[TrainTestValSplit]] = None,
         backend: BACKEND_LITERAL = "pandas",
     ) -> None:
@@ -208,7 +208,7 @@ class ParquetEADataset(MultiSourceEADataset[DataFrameType]):
         :param rel_triples: relation triples of knowledge graph
         :param attr_triples: attribute triples of knowledge graph
         :param dataset_names: tuple of dataset names
-        :param ds_prefixes: tuple of prefixes of respective dataset
+        :param ds_prefix_tuples: tuple of prefixes of respective dataset
         :param ent_links: gold standard entity links of alignment
         :param folds: optional pre-split folds of the gold standard
         :param backend: which backend is used of either 'pandas' or 'dask'
@@ -220,9 +220,10 @@ class ParquetEADataset(MultiSourceEADataset[DataFrameType]):
             dataset_names=dataset_names,
             folds=folds,  # type: ignore[arg-type]
         )
-        self.ds_prefixes = (
-            OrderedDict(zip(dataset_names, ds_prefixes))
-            if ds_prefixes is not None
+        self.ds_prefix_tuples = ds_prefix_tuples
+        self._ds_prefixes = (
+            OrderedDict(zip(dataset_names, ds_prefix_tuples))
+            if ds_prefix_tuples is not None
             else None
         )
         self.backend = backend
@@ -255,8 +256,8 @@ class ParquetEADataset(MultiSourceEADataset[DataFrameType]):
         with open(path.joinpath(self.__class__._DATASET_NAMES_PATH), "w") as fh:
             writer = csv.writer(fh, delimiter=",")
             writer.writerow(self.dataset_names)
-            if self.ds_prefixes is not None:
-                writer.writerow(self.ds_prefixes.values())
+            if self.ds_prefix_tuples is not None:
+                writer.writerow(self.ds_prefix_tuples)
 
         # write tables
         for tables, table_prefix in [
@@ -287,18 +288,6 @@ class ParquetEADataset(MultiSourceEADataset[DataFrameType]):
                     fold_links.to_file(
                         fold_dir.joinpath(link_path), write_cluster_id=False
                     )
-
-    @staticmethod
-    def _read_dataset_names_and_prefixes(
-        fh: Iterable[str],
-    ) -> Tuple[Tuple[str, ...], OrderedDict[str, str]]:
-        reader = csv.reader(fh, delimiter=",", quotechar='"')
-        lines = list(reader)
-        dataset_names = tuple(lines[0])
-        if len(lines) > 1:
-            prefixes = tuple(lines[1])
-            ds_prefixes = OrderedDict(zip(dataset_names, prefixes))
-        return dataset_names, ds_prefixes
 
     @classmethod
     def _read_parquet_values(
@@ -347,7 +336,6 @@ class ParquetEADataset(MultiSourceEADataset[DataFrameType]):
                 tables[table].append(
                     read_parquet_fn(path.joinpath(table_path), **kwargs)
                 )
-
         if ds_prefixes is None:
             ent_links = ClusterHelper.from_file(path.joinpath(cls._ENT_LINKS_PATH))
         else:
@@ -450,7 +438,6 @@ class CacheableEADataset(ParquetEADataset[DataFrameType]):
         parquet_load_options: Optional[Mapping] = None,
         parquet_store_options: Optional[Mapping] = None,
         backend: Literal["pandas"],
-        ds_prefixes: Optional[Tuple[str, ...]] = None,
         **init_kwargs,
     ):
         ...
@@ -464,7 +451,6 @@ class CacheableEADataset(ParquetEADataset[DataFrameType]):
         parquet_load_options: Optional[Mapping] = None,
         parquet_store_options: Optional[Mapping] = None,
         backend: Literal["dask"],
-        ds_prefixes: Optional[Tuple[str, ...]] = None,
         **init_kwargs,
     ):
         ...
@@ -477,7 +463,6 @@ class CacheableEADataset(ParquetEADataset[DataFrameType]):
         parquet_load_options: Optional[Mapping] = None,
         parquet_store_options: Optional[Mapping] = None,
         backend: BACKEND_LITERAL = "pandas",
-        ds_prefixes: Optional[Tuple[str, ...]] = None,
         **init_kwargs,
     ):
         """EADataset that uses caching after initial read.
@@ -494,9 +479,18 @@ class CacheableEADataset(ParquetEADataset[DataFrameType]):
         self.cache_path = cache_path
         self.parquet_load_options = parquet_load_options or {}
         self.parquet_store_options = parquet_store_options or {}
-        self._ds_prefix_tuple = ds_prefixes
         update_cache = False
         additional_kwargs: Dict[str, Any] = {}
+
+        if (not hasattr(self, "_ds_prefixes") or self._ds_prefixes is None) and (
+            "ds_prefix_tuples" in init_kwargs
+            and "dataset_names" in init_kwargs
+            and init_kwargs["ds_prefix_tuples"]
+        ):
+            self._ds_prefixes = OrderedDict(
+                zip(init_kwargs["dataset_names"], init_kwargs["ds_prefix_tuples"])
+            )
+
         if use_cache:
             # check if dir exists and is not empty (empty list is truthy)
             if self.cache_path.exists() and os.listdir(self.cache_path):
@@ -564,7 +558,7 @@ class ZipEADataset(CacheableEADataset[DataFrameType]):
         zip_path: str,
         inner_path: pathlib.PurePosixPath,
         dataset_names: Tuple[str, ...],
-        ds_prefixes: Optional[Tuple[str, ...]] = None,
+        ds_prefix_tuples: Optional[Tuple[str, ...]] = None,
         file_names_rel_triples: Sequence[str] = ("rel_triples_1", "rel_triples_2"),
         file_names_attr_triples: Sequence[str] = ("attr_triples_1", "attr_triples_2"),
         file_name_ent_links: str = "ent_links",
@@ -581,7 +575,7 @@ class ZipEADataset(CacheableEADataset[DataFrameType]):
         zip_path: str,
         inner_path: pathlib.PurePosixPath,
         dataset_names: Tuple[str, ...],
-        ds_prefixes: Optional[Tuple[str, ...]] = None,
+        ds_prefix_tuples: Optional[Tuple[str, ...]] = None,
         file_names_rel_triples: Sequence[str] = ("rel_triples_1", "rel_triples_2"),
         file_names_attr_triples: Sequence[str] = ("attr_triples_1", "attr_triples_2"),
         file_name_ent_links: str = "ent_links",
@@ -597,7 +591,7 @@ class ZipEADataset(CacheableEADataset[DataFrameType]):
         zip_path: str,
         inner_path: pathlib.PurePosixPath,
         dataset_names: Tuple[str, ...],
-        ds_prefixes: Optional[Tuple[str, ...]] = None,
+        ds_prefix_tuples: Optional[Tuple[str, ...]] = None,
         file_names_rel_triples: Sequence[str] = ("rel_triples_1", "rel_triples_2"),
         file_names_attr_triples: Sequence[str] = ("attr_triples_1", "attr_triples_2"),
         file_name_ent_links: str = "ent_links",
@@ -610,8 +604,9 @@ class ZipEADataset(CacheableEADataset[DataFrameType]):
         :param zip_path: path to zip archive containing data
         :param inner_path: base path inside zip archive
         :param dataset_names: tuple of dataset names
-        :param file_name_rel_triples: file names of relation triples
-        :param file_name_attr_triples: file names of attribute triples
+        :param ds_prefix_tuples: tuple of prefixes of respective dataset
+        :param file_names_rel_triples: file names of relation triples
+        :param file_names_attr_triples: file names of attribute triples
         :param file_name_ent_links: file name gold standard containing all entity links
         :param backend: Whether to use "pandas" or "dask"
         :param use_cache: whether to use cache or not
@@ -621,9 +616,9 @@ class ZipEADataset(CacheableEADataset[DataFrameType]):
         self.file_names_rel_triples = file_names_rel_triples
         self.file_names_attr_triples = file_names_attr_triples
         self.file_name_ent_links = file_name_ent_links
-        self.ds_prefixes = (
-            OrderedDict(zip(dataset_names, ds_prefixes))
-            if ds_prefixes is not None
+        self._ds_prefixes = (
+            OrderedDict(zip(dataset_names, ds_prefix_tuples))
+            if ds_prefix_tuples is not None
             else None
         )
         super().__init__(  # type: ignore[misc]
@@ -631,7 +626,7 @@ class ZipEADataset(CacheableEADataset[DataFrameType]):
             cache_path=cache_path,
             backend=backend,  # type: ignore[arg-type]
             use_cache=use_cache,
-            ds_prefixes=ds_prefixes,
+            ds_prefix_tuples=ds_prefix_tuples,
         )
 
     def initial_read(self, backend: BACKEND_LITERAL) -> Dict[str, Any]:
@@ -657,14 +652,14 @@ class ZipEADataset(CacheableEADataset[DataFrameType]):
         sep: str = "\t",
         encoding: str = "utf8",
     ) -> ClusterHelper:
-        if self.ds_prefixes is not None:
+        if self._ds_prefixes is not None:
             return PrefixedClusterHelper.from_zipped_file(
                 path=self.zip_path,
                 inner_path=str(inner_folder.joinpath(file_name)),
                 has_cluster_id=False,
                 sep=sep,
                 encoding=encoding,
-                ds_prefixes=self.ds_prefixes,
+                ds_prefixes=self._ds_prefixes,
             )
         return ClusterHelper.from_zipped_file(
             path=self.zip_path,
@@ -733,7 +728,7 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset[DataFrameType]):
         zip_path: str,
         inner_path: pathlib.PurePosixPath,
         dataset_names: Tuple[str, ...],
-        ds_prefixes: Optional[Tuple[str, ...]] = None,
+        ds_prefix_tuples: Optional[Tuple[str, ...]] = None,
         file_names_rel_triples: Sequence[str] = ("rel_triples_1", "rel_triples_2"),
         file_names_attr_triples: Sequence[str] = ("attr_triples_1", "attr_triples_2"),
         file_name_ent_links: str = "ent_links",
@@ -755,7 +750,7 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset[DataFrameType]):
         zip_path: str,
         inner_path: pathlib.PurePosixPath,
         dataset_names: Tuple[str, ...],
-        ds_prefixes: Optional[Tuple[str, ...]] = None,
+        ds_prefix_tuples: Optional[Tuple[str, ...]] = None,
         file_names_rel_triples: Sequence[str] = ("rel_triples_1", "rel_triples_2"),
         file_names_attr_triples: Sequence[str] = ("attr_triples_1", "attr_triples_2"),
         file_name_ent_links: str = "ent_links",
@@ -776,7 +771,7 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset[DataFrameType]):
         zip_path: str,
         inner_path: pathlib.PurePosixPath,
         dataset_names: Tuple[str, ...],
-        ds_prefixes: Optional[Tuple[str, ...]] = None,
+        ds_prefix_tuples: Optional[Tuple[str, ...]] = None,
         file_names_rel_triples: Sequence[str] = ("rel_triples_1", "rel_triples_2"),
         file_names_attr_triples: Sequence[str] = ("attr_triples_1", "attr_triples_2"),
         file_name_ent_links: str = "ent_links",
@@ -794,6 +789,7 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset[DataFrameType]):
         :param zip_path: path to zip archive containing data
         :param inner_path: base path inside zip archive
         :param dataset_names: tuple of dataset names
+        :param ds_prefix_tuples: tuple of prefixes of respective dataset
         :param file_names_rel_triples: file names of relation triples
         :param file_names_attr_triples: file names of attribute triples
         :param file_name_ent_links: file name gold standard containing all entity links
@@ -823,7 +819,7 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset[DataFrameType]):
             file_names_rel_triples=file_names_rel_triples,
             file_names_attr_triples=file_names_attr_triples,
             file_name_ent_links=file_name_ent_links,
-            ds_prefixes=ds_prefixes,
+            ds_prefix_tuples=ds_prefix_tuples,
         )
 
     def initial_read(self, backend: BACKEND_LITERAL) -> Dict[str, Any]:
@@ -918,40 +914,36 @@ def create_statistics_df(
         "Properties",
         "Literals",
         "Clusters",
+        "Intra-dataset Matches",
+        "All Matches",
     ]
     for ds in datasets:
         ds_family = str(ds.__class__.__name__).split(".")[-1]
-        ds_stats, num_ent_links = ds.statistics()
-        for ds_side, ds_side_name in zip(ds_stats, ds.dataset_names):
+        ds_stats, num_clusters = ds.statistics()
+        all_matches = ds.ent_links.number_of_links
+        intra_dataset_matches = (0,) * len(ds.dataset_names)
+        if isinstance(ds.ent_links, PrefixedClusterHelper):
+            intra_dataset_matches = ds.ent_links.number_of_intra_links
+        for i, (ds_side, ds_side_name) in enumerate(zip(ds_stats, ds.dataset_names)):
             if seperate_attribute_relations:
-                rows.append(
-                    [
-                        ds_family,
-                        ds.canonical_name,
-                        ds_side_name,
-                        ds_side.entities,
-                        ds_side.rel_triples,
-                        ds_side.attr_triples,
-                        ds_side.relations,
-                        ds_side.properties,
-                        ds_side.literals,
-                        num_ent_links,
-                    ]
-                )
+                triples = [ds_side.rel_triples, ds_side.attr_triples]
             else:
-                rows.append(
-                    [
-                        ds_family,
-                        ds.canonical_name,
-                        ds_side_name,
-                        ds_side.entities,
-                        ds_side.triples,
-                        ds_side.relations,
-                        ds_side.properties,
-                        ds_side.literals,
-                        num_ent_links,
-                    ]
-                )
+                triples = [ds_side.triples]
+            rows.append(
+                [
+                    ds_family,
+                    ds.canonical_name,
+                    ds_side_name,
+                    ds_side.entities,
+                    *triples,
+                    ds_side.relations,
+                    ds_side.properties,
+                    ds_side.literals,
+                    num_clusters,
+                    intra_dataset_matches[i],
+                    all_matches,
+                ]
+            )
     statistics_df = pd.DataFrame(
         rows,
         columns=columns,

@@ -7,15 +7,15 @@ from typing import Any, Dict, List, Literal, NamedTuple, Optional, Tuple, Union
 
 import dask.dataframe as dd
 import pandas as pd
-from eche import ClusterHelper
+from eche import ClusterHelper, PrefixedClusterHelper
 
 from .base import (
     BASE_DATASET_MODULE,
     BinaryCacheableEADataset,
     DatasetStatistics,
 )
-from .dask import read_dask_bag_from_archive_text
-from .typing import (
+from .dask_utils import read_dask_bag_from_archive_text
+from .my_typing import (
     BACKEND_LITERAL,
     COLUMNS,
     EA_SIDE_LEFT,
@@ -34,6 +34,28 @@ OAEI_TASK_NAME = Literal[
     "memoryalpha-memorybeta",
     "memoryalpha-stexpanded",
 ]
+TASK_NAME_TO_PREFIX: Dict[OAEI_TASK_NAME, Tuple[str, str]] = {
+    "marvelcinematicuniverse-marvel": (
+        "http://dbkwik.webdatacommons.org/marvelcinematicuniverse.wikia.com/resource/",
+        "http://dbkwik.webdatacommons.org/marvel.wikia.com/resource/",
+    ),
+    "memoryalpha-memorybeta": (
+        "http://dbkwik.webdatacommons.org/memory-alpha.wikia.com/resource/",
+        "http://dbkwik.webdatacommons.org/memory-beta.wikia.com/resource/",
+    ),
+    "memoryalpha-stexpanded": (
+        "http://dbkwik.webdatacommons.org/memory-alpha.wikia.com/resource/",
+        "http://dbkwik.webdatacommons.org/stexpanded.wikia.com/resource/",
+    ),
+    "starwars-swg": (
+        "http://dbkwik.webdatacommons.org/starwars.wikia.com/resource/",
+        "http://dbkwik.webdatacommons.org/swg.wikia.com/resource/",
+    ),
+    "starwars-swtor": (
+        "http://dbkwik.webdatacommons.org/starwars.wikia.com/resource/",
+        "http://dbkwik.webdatacommons.org/swtor.wikia.com/resource/",
+    ),
+}
 
 logger = logging.getLogger(__name__)
 
@@ -118,8 +140,8 @@ class OAEI(BinaryCacheableEADataset[dd.DataFrame]):
     class_links: ClusterHelper
     property_links: ClusterHelper
 
-    _CLASS_LINKS_PATH: str = "class_links_parquet"
-    _PROPERTY_LINKS_PATH: str = "property_links_parquet"
+    _CLASS_LINKS_PATH: str = "class_links"
+    _PROPERTY_LINKS_PATH: str = "property_links"
 
     _TASK_URLS = MappingProxyType(
         {
@@ -266,7 +288,6 @@ class OAEI(BinaryCacheableEADataset[dd.DataFrame]):
         """Initialize a OAEI Knowledge Graph Track task.
 
         :param task: Name of the task. Has to be one of {starwars-swg,starwars-swtor,marvelcinematicuniverse-marvel,memoryalpha-memorybeta, memoryalpha-stexpanded}
-        :param backend: Whether to use "pandas" or "dask"
         :param use_cache: whether to use cache or not
         :param cache_path: Path where cache will be stored/loaded
         :raises ValueError: if unknown task value is provided
@@ -286,9 +307,11 @@ class OAEI(BinaryCacheableEADataset[dd.DataFrame]):
             cache_path=actual_cache_path,
             dataset_names=(left_name, right_name),
             backend="dask",
+            ds_prefix_tuples=TASK_NAME_TO_PREFIX[task],
         )
 
     def initial_read(self, backend: BACKEND_LITERAL):
+        assert self._ds_prefixes
         archive_url, sha512hash = OAEI._TASK_URLS[self.task]
 
         # ensure archive file is present
@@ -304,19 +327,18 @@ class OAEI(BinaryCacheableEADataset[dd.DataFrame]):
         left_attr, left_rel = self._read_triples(archive_path, left=True)
         right_attr, right_rel = self._read_triples(archive_path, left=False)
 
-        # need to set before initialization
-        # because of possible transforming
         self.property_links = ClusterHelper.from_numpy(
             property_mapping_df.compute().to_numpy()
         )
         self.class_links = ClusterHelper.from_numpy(
-            class_mapping_df.compute().to_numpy()
+            class_mapping_df.compute().to_numpy(),
         )
         return {
             "rel_triples": [left_rel, right_rel],
             "attr_triples": [left_attr, right_attr],
-            "ent_links": ClusterHelper.from_numpy(
-                entity_mapping_df.compute().to_numpy()
+            "ent_links": PrefixedClusterHelper.from_numpy(
+                entity_mapping_df.compute().to_numpy(),
+                ds_prefixes=self._ds_prefixes,
             ),
         }
 

@@ -191,11 +191,18 @@ def test_open_ea_mock(
     mocker.patch(
         "sylloge.base.read_dask_df_archive_csv", rm.mock_read_dask_df_archive_csv
     )
+    mocker.patch("sylloge.open_ea_loader.OPEN_EA_MODULE.ensure", rm.mock_ensure)
+    mocker.patch(
+        "sylloge.base.PrefixedClusterHelper.from_zipped_file",
+        rm.mock_cluster_helper_from_zipped_file,
+    )
+    # TODO mock zip ensure
     for use_cache, cache_exists in [(False, False), (True, False), (True, True)]:
         if cache_exists:
             # ensure these methods don't get called
             mocker.patch("sylloge.base.read_zipfile_csv", rm.assert_not_called)
             mocker.patch("sylloge.base.read_dask_df_archive_csv", rm.assert_not_called)
+
         ds = OpenEA(backend=backend, use_cache=use_cache, cache_path=tmp_path, **params)
         assert ds.__repr__() is not None
         assert ds.canonical_name
@@ -216,3 +223,6 @@ def test_open_ea_mock(
             assert isinstance(ds.rel_triples_left, pd.DataFrame)
         else:
             assert isinstance(ds.rel_triples_left, dd.DataFrame)
+
+        assert ds.ds_prefix_tuples is not None
+        assert ds._ds_prefixes is not None

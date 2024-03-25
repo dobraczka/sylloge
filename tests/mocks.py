@@ -1,6 +1,6 @@
 import pathlib
 from collections import OrderedDict
-from typing import Iterable, Optional
+from typing import Any, Iterable, Mapping, Optional, Tuple, Union
 
 import dask.bag as db
 import dask.dataframe as dd
@@ -12,7 +12,8 @@ from strawman import dummy_df, dummy_triples
 from util import EATaskStatistics
 
 from sylloge.moviegraph_benchmark_loader import GP_TO_DS_PREFIX, GraphPair
-from sylloge.typing import EA_SIDE_LEFT, EA_SIDE_RIGHT, EA_SIDES
+from sylloge.my_typing import EA_SIDE_LEFT, EA_SIDE_RIGHT, EA_SIDES
+from sylloge.oaei_loader import TASK_NAME_TO_PREFIX
 
 
 class ResourceMocker:
@@ -33,6 +34,16 @@ class ResourceMocker:
             self.statistic = statistic
         self.fraction = fraction
         self.seed = seed
+
+    def mock_ensure(
+        self,
+        *subkeys: str,
+        url: str,
+        name: Optional[str] = None,
+        force: bool = False,
+        download_kwargs: Optional[Mapping[str, Any]] = None,
+    ) -> pathlib.Path:
+        return pathlib.Path("mocked")
 
     def mock_read(self, path: str, names: Iterable):
         return self.mock_read_zipfile_csv(path="", inner_path=path)
@@ -58,9 +69,12 @@ class ResourceMocker:
         return PrefixedClusterHelper(clusters, ds_prefixes=ds_prefixes)
 
     def _add_prefixes(
-        self, ent_links: pd.DataFrame, ds_prefixes: OrderedDict
+        self, ent_links: pd.DataFrame, ds_prefixes: Union[OrderedDict, Tuple]
     ) -> pd.DataFrame:
-        left_pref, right_pref = tuple(ds_prefixes.values())[:2]
+        if isinstance(ds_prefixes, OrderedDict):
+            left_pref, right_pref = tuple(ds_prefixes.values())[:2]
+        else:
+            left_pref, right_pref = ds_prefixes
         ent_links["left"] = left_pref + ent_links["left"]
         ent_links["right"] = right_pref + ent_links["right"]
         return ent_links
@@ -163,6 +177,7 @@ class ResourceMocker:
         self, archive_path: str, inner_path: str, protocol: str
     ) -> db.Bag:
         if "ref" in inner_path:
+            left_pref, right_pref = TASK_NAME_TO_PREFIX[inner_path.split("/")[0]]  # type: ignore[index]
             return db.from_sequence(
                 [
                     (
@@ -184,10 +199,10 @@ class ResourceMocker:
                         "_:N7a75889e6f604aef9e0c2937692822d9 <http://knowledgeweb.semanticweb.org/heterogeneity/alignmententity2> <http://dbkwik.webdatacommons.org/swg.wikia.com/property/weapons> .\n"
                     ),
                     (
-                        "_:Na53a488f3e0648d6a181817a992fb395 <http://knowledgeweb.semanticweb.org/heterogeneity/alignmententity2> <http://dbkwik.webdatacommons.org/swg.wikia.com/resource/TransGalMeg_%22Ixiyen%22_Fast_Attack_Craft> .\n"
+                        f"_:Na53a488f3e0648d6a181817a992fb395 <http://knowledgeweb.semanticweb.org/heterogeneity/alignmententity2> <{left_pref}TransGalMeg_%22Ixiyen%22_Fast_Attack_Craft> .\n"
                     ),
                     (
-                        "_:Na53a488f3e0648d6a181817a992fb395 <http://knowledgeweb.semanticweb.org/heterogeneity/alignmententity1> <http://dbkwik.webdatacommons.org/starwars.wikia.com/resource/Ixiyen-class_fast_attack_craft> .\n"
+                        f"_:Na53a488f3e0648d6a181817a992fb395 <http://knowledgeweb.semanticweb.org/heterogeneity/alignmententity1> <{right_pref}Ixiyen-class_fast_attack_craft> .\n"
                     ),
                     (
                         "_:Nb2fe1639010d4f81bfed1f845dd38e8f <http://knowledgeweb.semanticweb.org/heterogeneity/alignmententity1> <http://dbkwik.webdatacommons.org/starwars.wikia.com/class/weapon> .\n"

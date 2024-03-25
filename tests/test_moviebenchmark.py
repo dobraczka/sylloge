@@ -130,3 +130,4 @@ def test_movie_benchmark_mock(
             assert fold.train is not None
             assert fold.test is not None
             assert fold.val is not None
+        assert ds._ds_prefixes is not None

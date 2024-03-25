@@ -1,6 +1,5 @@
 import os
 import pathlib
-from collections import OrderedDict
 from typing import Dict, Literal, Optional, Tuple, Union
 
 import pandas as pd
@@ -38,11 +37,11 @@ TMDB_PREFIX = f"{BASE_PREFIX}TMDB/"
 TVDB_PREFIX = f"{BASE_PREFIX}TVDB/"
 
 
-GP_TO_DS_PREFIX: Dict[GraphPair, OrderedDict[str, str]] = {
-    IMDB_TMDB: OrderedDict({IMDB: IMDB_PREFIX, TMDB: TMDB_PREFIX}),
-    IMDB_TVDB: OrderedDict({IMDB: IMDB_PREFIX, TVDB: TVDB_PREFIX}),
-    TMDB_TVDB: OrderedDict({TMDB: TMDB_PREFIX, TVDB: TVDB_PREFIX}),
-    MULTI: OrderedDict({IMDB: IMDB_PREFIX, TMDB: TMDB_PREFIX, TVDB: TVDB_PREFIX}),
+GP_TO_DS_PREFIX: Dict[GraphPair, Tuple[str, ...]] = {
+    IMDB_TMDB: (IMDB_PREFIX, TMDB_PREFIX),
+    IMDB_TVDB: (IMDB_PREFIX, TVDB_PREFIX),
+    TMDB_TVDB: (TMDB_PREFIX, TVDB_PREFIX),
+    MULTI: (IMDB_PREFIX, TMDB_PREFIX, TVDB_PREFIX),
 }
 
 
@@ -87,10 +86,11 @@ class MovieGraphBenchmark(CacheableEADataset[pd.DataFrame]):
             use_cache=use_cache,
             backend="pandas",
             dataset_names=ds_names,
+            ds_prefix_tuples=GP_TO_DS_PREFIX[graph_pair],
         )
 
     def initial_read(self, backend: BACKEND_LITERAL):
-        ds_prefixes = GP_TO_DS_PREFIX[self.graph_pair]
+        assert self._ds_prefixes
         data_path = str(MOVIEGRAPH_MODULE.base)
         if self.graph_pair == MULTI:
             ds = load_data(pair=IMDB_TMDB, data_path=data_path)
@@ -98,7 +98,8 @@ class MovieGraphBenchmark(CacheableEADataset[pd.DataFrame]):
             rel_triples = [ds.rel_triples_1, ds.rel_triples_2, ds2.rel_triples_2]
             attr_triples = [ds.attr_triples_1, ds.attr_triples_2, ds2.attr_triples_2]
             ent_links = PrefixedClusterHelper.from_file(
-                os.path.join(data_path, "multi_source_cluster"), ds_prefixes=ds_prefixes
+                os.path.join(data_path, "multi_source_cluster"),
+                ds_prefixes=self._ds_prefixes,
             )
         else:
             ds = load_data(pair=self.graph_pair, data_path=data_path)
@@ -106,18 +107,18 @@ class MovieGraphBenchmark(CacheableEADataset[pd.DataFrame]):
             attr_triples = [ds.attr_triples_1, ds.attr_triples_2]
             ent_links = PrefixedClusterHelper.from_file(
                 os.path.join(data_path, self.graph_pair, "cluster"),
-                ds_prefixes=ds_prefixes,
+                ds_prefixes=self._ds_prefixes,
             )
         folds = [
             TrainTestValSplit(
                 train=PrefixedClusterHelper.from_numpy(
-                    fold.train_links.to_numpy(), ds_prefixes=ds_prefixes
+                    fold.train_links.to_numpy(), ds_prefixes=self._ds_prefixes
                 ),
                 test=PrefixedClusterHelper.from_numpy(
-                    fold.test_links.to_numpy(), ds_prefixes=ds_prefixes
+                    fold.test_links.to_numpy(), ds_prefixes=self._ds_prefixes
                 ),
                 val=PrefixedClusterHelper.from_numpy(
-                    fold.valid_links.to_numpy(), ds_prefixes=ds_prefixes
+                    fold.valid_links.to_numpy(), ds_prefixes=self._ds_prefixes
                 ),
             )
             for fold in ds.folds

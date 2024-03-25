@@ -2,16 +2,23 @@ import pathlib
 from typing import Dict
 
 import pytest
+from eche import PrefixedClusterHelper
 from mocks import ResourceMocker
 from util import EATaskStatistics
 
-from sylloge import ZipEADatasetWithPreSplitFolds
+from sylloge import (
+    MED_BBK,
+    OAEI,
+    MovieGraphBenchmark,
+    OpenEA,
+    ZipEADatasetWithPreSplitFolds,
+)
 
 statistics_with_params = [
     (
         {
             "dataset_names": ("ds1", "ds2"),
-            "ds_prefixes": ("left", "right"),
+            "ds_prefix_tuples": ("left", "right"),
         },
         EATaskStatistics(
             num_rel_triples=(100, 200),
@@ -23,7 +30,7 @@ statistics_with_params = [
     (
         {
             "dataset_names": ("ds1", "ds2", "ds3"),
-            "ds_prefixes": ("left", "right", "middle"),
+            "ds_prefix_tuples": ("left", "right", "middle"),
             "file_names_rel_triples": (
                 "rel_triples_1",
                 "rel_triples_2",
@@ -45,7 +52,7 @@ statistics_with_params = [
     (
         {
             "dataset_names": tuple(f"ds_{idx}" for idx in range(20)),
-            "ds_prefixes": tuple(f"ds_{idx}" for idx in range(20)),
+            "ds_prefix_tuples": tuple(f"ds_{idx}" for idx in range(20)),
             "file_names_rel_triples": tuple(
                 f"rel_triples_{idx}" for idx in range(1, 21)
             ),
@@ -118,3 +125,53 @@ def test_zip_ea_dataset_with_pre_split_folds(
         assert len(ds.ent_links) == statistic.num_ent_links
         assert ds.folds is not None
         assert len(ds.folds) == 5
+
+
+@pytest.mark.slow()
+@pytest.mark.parametrize(
+    ("cls", "args"),
+    [
+        (OpenEA, {}),
+        (OpenEA, {"graph_pair": "D_W", "size": "15K", "version": "V1"}),
+        (OpenEA, {"graph_pair": "D_W", "size": "15K", "version": "V2"}),
+        (OpenEA, {"graph_pair": "D_Y", "size": "15K", "version": "V1"}),
+        (OpenEA, {"graph_pair": "D_Y", "size": "15K", "version": "V2"}),
+        (OpenEA, {"graph_pair": "EN_DE", "size": "15K", "version": "V1"}),
+        (OpenEA, {"graph_pair": "EN_DE", "size": "15K", "version": "V2"}),
+        (OpenEA, {"graph_pair": "EN_FR", "size": "15K", "version": "V1"}),
+        (OpenEA, {"graph_pair": "EN_FR", "size": "15K", "version": "V2"}),
+        (OpenEA, {"graph_pair": "D_W", "size": "100K", "version": "V1"}),
+        (OpenEA, {"graph_pair": "D_W", "size": "100K", "version": "V2"}),
+        (OpenEA, {"graph_pair": "D_Y", "size": "100K", "version": "V1"}),
+        (OpenEA, {"graph_pair": "D_Y", "size": "100K", "version": "V2"}),
+        (OpenEA, {"graph_pair": "EN_DE", "size": "100K", "version": "V1"}),
+        (OpenEA, {"graph_pair": "EN_DE", "size": "100K", "version": "V2"}),
+        (OpenEA, {"graph_pair": "EN_FR", "size": "100K", "version": "V1"}),
+        (OpenEA, {"graph_pair": "EN_FR", "size": "100K", "version": "V2"}),
+        (MovieGraphBenchmark, {}),
+        (MovieGraphBenchmark, {"graph_pair": "imdb-tmdb"}),
+        (MovieGraphBenchmark, {"graph_pair": "imdb-tvdb"}),
+        (MovieGraphBenchmark, {"graph_pair": "tmdb-tvdb"}),
+        (MED_BBK, {}),
+        (OAEI, {}),
+        (OAEI, {"task": "marvelcinematicuniverse-marvel"}),
+        (OAEI, {"task": "memoryalpha-memorybeta"}),
+        (OAEI, {"task": "memoryalpha-stexpanded"}),
+        (OAEI, {"task": "starwars-swg"}),
+        (OAEI, {"task": "starwars-swtor"}),
+    ],
+)
+def test_all_load_from_existing_cache(cls, args):
+    """Smoketest loading."""
+    ds = cls(**args)
+    assert ds.__repr__() is not None
+    assert ds.canonical_name
+    assert ds.rel_triples is not None
+    assert ds.rel_triples is not None
+    assert ds.attr_triples is not None
+    assert ds.attr_triples is not None
+    assert ds.ent_links is not None
+    assert ds.dataset_names is not None
+    if cls != MED_BBK:
+        assert ds._ds_prefixes is not None
+        assert isinstance(ds.ent_links, PrefixedClusterHelper)

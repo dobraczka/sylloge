@@ -418,23 +418,22 @@ files = [
 
 [[package]]
 name = "eche"
-version = "0.1.0"
+version = "0.2.1"
 description = "Little helper for handling entity clusters"
 category = "main"
 optional = false
-python-versions = ">=3.8,<4.0"
-files = []
-develop = false
+python-versions = "<4.0,>=3.8"
+files = [
+    {file = "eche-0.2.1-py3-none-any.whl", hash = "sha256:277c1fe5dbe40ac92d5eca00917bcb278ccb987f7bf044df885da41779330ad7"},
+    {file = "eche-0.2.1.tar.gz", hash = "sha256:27f0d6fc2bfe3f27361bd1205b2b88d92b30acf99032eef00449a8ab0de348b0"},
+]
 
 [package.dependencies]
 networkx = "*"
+numpy = "*"
 
 [package.extras]
 docs = ["mkdocs (>=1.5.3,<2.0.0)", "mkdocs-gen-files (>=0.5.0,<0.6.0)", "mkdocs-literate-nav (>=0.6.1,<0.7.0)", "mkdocs-material (>=9.5.9,<10.0.0)", "mkdocs-section-index (>=0.3.8,<0.4.0)", "mkdocstrings[python] (>=0.24.0,<0.25.0)"]
-
-[package.source]
-type = "directory"
-url = "../eche"
 
 [[package]]
 name = "exceptiongroup"
@@ -1956,4 +1955,4 @@ docs = ["Sphinx", "insegel", "sphinx-automodapi", "sphinx-autodoc-typehints"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<4.0"
-content-hash = "2de369d6b8b4bc37ece200e140efc69659db97f30ca0cd9185fda71e51ca4cbf"
+content-hash = "8f0b28457a300335a1240fbdb7bae2a5fb06627c4bc91bbcd6132c8990c723cb"
