@@ -88,6 +88,11 @@ class MovieGraphBenchmark(CacheableEADataset[pd.DataFrame]):
             dataset_names=ds_names,
             ds_prefix_tuples=GP_TO_DS_PREFIX[graph_pair],
         )
+        if graph_pair != MULTI:
+            self.rel_triples_left = self.rel_triples[0]
+            self.rel_triples_right = self.rel_triples[1]
+            self.attr_triples_left = self.attr_triples[0]
+            self.attr_triples_right = self.attr_triples[1]
 
     def initial_read(self, backend: BACKEND_LITERAL):
         assert self._ds_prefixes
@@ -129,6 +134,14 @@ class MovieGraphBenchmark(CacheableEADataset[pd.DataFrame]):
             "ent_links": ent_links,
             "folds": folds,
         }
+
+    def __repr__(self) -> str:
+        repr_str = super().__repr__()
+        if self.graph_pair != MULTI:
+            return repr_str.replace("triples_0", "triples_left").replace(
+                "triples_1", "triples_right"
+            )
+        return repr_str
 
     @property
     def _canonical_name(self) -> str:
