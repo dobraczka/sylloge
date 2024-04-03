@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Literal, NamedTuple, Optional, Tuple, Union
 
 import dask.dataframe as dd
 import pandas as pd
-from eche import ClusterHelper, PrefixedClusterHelper
+from eche import PrefixedClusterHelper
 
 from .base import (
     BASE_DATASET_MODULE,
@@ -137,8 +137,8 @@ class OAEI(BinaryCacheableEADataset[dd.DataFrame]):
     More information can be found at the `website <http://oaei.ontologymatching.org/2019/knowledgegraph/index.html>`_.
     """
 
-    class_links: ClusterHelper
-    property_links: ClusterHelper
+    class_links: pd.DataFrame
+    property_links: pd.DataFrame
 
     _CLASS_LINKS_PATH: str = "class_links"
     _PROPERTY_LINKS_PATH: str = "property_links"
@@ -327,17 +327,13 @@ class OAEI(BinaryCacheableEADataset[dd.DataFrame]):
         left_attr, left_rel = self._read_triples(archive_path, left=True)
         right_attr, right_rel = self._read_triples(archive_path, left=False)
 
-        self.property_links = ClusterHelper.from_numpy(
-            property_mapping_df.compute().to_numpy()
-        )
-        self.class_links = ClusterHelper.from_numpy(
-            class_mapping_df.compute().to_numpy(),
-        )
+        self.property_links = property_mapping_df
+        self.class_links = class_mapping_df
         return {
             "rel_triples": [left_rel, right_rel],
             "attr_triples": [left_attr, right_attr],
             "ent_links": PrefixedClusterHelper.from_numpy(
-                entity_mapping_df.compute().to_numpy(),
+                entity_mapping_df.to_numpy(),
                 ds_prefixes=self._ds_prefixes,
             ),
         }
@@ -357,7 +353,7 @@ class OAEI(BinaryCacheableEADataset[dd.DataFrame]):
         base_repr = super().__repr__()[:-1]  # remove last bracket
         return f"{base_repr}, property_links={len(self.property_links)}, class_links={len(self.class_links)})"
 
-    def _pair_dfs(self, mapping_df: dd.DataFrame) -> dd.DataFrame:
+    def _pair_dfs(self, mapping_df: dd.DataFrame) -> pd.DataFrame:
         left_side_uri = (
             "http://knowledgeweb.semanticweb.org/heterogeneity/alignmententity1"
         )
@@ -372,13 +368,14 @@ class OAEI(BinaryCacheableEADataset[dd.DataFrame]):
                 map_right.set_index(LABEL_HEAD),
                 lsuffix=EA_SIDE_LEFT,
                 rsuffix=EA_SIDE_RIGHT,
-            )[[joined_left, joined_right]]
+            )
+            .compute()[[joined_left, joined_right]]
             .rename(columns={joined_left: EA_SIDE_LEFT, joined_right: EA_SIDE_RIGHT})
         )
 
     def _mapping_dfs(
         self, archive_path: str
-    ) -> Tuple[dd.DataFrame, dd.DataFrame, dd.DataFrame]:
+    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         LINE_TYPE_COL = "line_type"
         schema_df = pd.DataFrame(
             {
@@ -465,7 +462,7 @@ class OAEI(BinaryCacheableEADataset[dd.DataFrame]):
                 self.__class__._CLASS_LINKS_PATH,
             ],
         ):
-            table.to_file(path.joinpath(table_path), write_cluster_id=False)
+            table.to_parquet(path.joinpath(table_path), **kwargs)
 
     @classmethod
     def _read_parquet_values(
@@ -491,7 +488,7 @@ class OAEI(BinaryCacheableEADataset[dd.DataFrame]):
                 cls._CLASS_LINKS_PATH,
             ],
         ):
-            additional_init_args[table] = ClusterHelper.from_file(
-                path.joinpath(table_path), has_cluster_id=False
+            additional_init_args[table] = pd.read_parquet(
+                path.joinpath(table_path), **kwargs
             )
         return init_args, additional_init_args
