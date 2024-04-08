@@ -10,7 +10,6 @@ from .base import (
     TrainTestValSplit,
     ZipEADataset,
     ZipEADatasetWithPreSplitFolds,
-    create_statistics_df,
 )
 from .id_mapped import IdMappedEADataset
 from .med_bbk_loader import MED_BBK
@@ -35,7 +34,6 @@ __all__ = [
     "BinaryZipEADatasetWithPreSplitFolds",
     "ZipEADatasetWithPreSplitFolds",
     "TrainTestValSplit",
-    "create_statistics_df",
 ]
 __version__ = version(__package__)
 logging.getLogger(__name__).setLevel(logging.INFO)
