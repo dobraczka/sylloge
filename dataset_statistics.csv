@@ -37,8 +37,11 @@ MovieGraphBenchmark,moviegraphbenchmark_imdb_tvdb,imdb,5129,17507,20800,3,13,608
 MovieGraphBenchmark,moviegraphbenchmark_imdb_tvdb,tvdb,7814,15455,20902,3,9,7683,1483,22663,25583
 MovieGraphBenchmark,moviegraphbenchmark_tmdb_tvdb,tmdb,6061,27903,23761,4,30,9991,1920,64,26138
 MovieGraphBenchmark,moviegraphbenchmark_tmdb_tvdb,tvdb,7814,15455,20902,3,9,7683,1920,22663,26138
-MED_BBK,med_bbk,MED,9162,158357,11467,32,19,10858,8885,0,5619
-MED_BBK,med_bbk,BBK,9162,50307,44987,20,21,36608,8885,0,5619
+MovieGraphBenchmark,moviegraphbenchmark_multi,imdb,5129,17507,20800,3,13,6082,3598,1,31230
+MovieGraphBenchmark,moviegraphbenchmark_multi,tmdb,6061,27903,23761,4,30,9991,3598,64,31230
+MovieGraphBenchmark,moviegraphbenchmark_multi,tvdb,7814,15455,20902,3,9,7683,3598,22663,31230
+MED_BBK,med_bbk,MED,9162,158357,11467,32,19,10858,9162,0,9162
+MED_BBK,med_bbk,BBK,9162,50307,44987,20,21,36608,9162,0,9162
 OAEI,oaei_marvelcinematicuniverse_marvel,marvelcinematicuniverse,216033,1094598,130517,130,110,56566,1654,0,1654
 OAEI,oaei_marvelcinematicuniverse_marvel,marvel,1472619,5152898,1580468,63,127,749980,1654,0,1654
 OAEI,oaei_memoryalpha_memorybeta,memoryalpha,254537,2096198,430730,180,287,226110,9296,0,9296
