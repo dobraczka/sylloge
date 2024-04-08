@@ -158,7 +158,7 @@ Datasets
 More broad statistics are provided in `dataset_statistics.csv`. You can also get a pandas DataFrame with statistics for specific datasets for example to create tables for publications:
 ```
 >>> ds = MovieGraphBenchmark(graph_pair="multi")
->>> from sylloge.base import create_statistics_df
+>>> from sylloge import create_statistics_df
 >>> stats_df = create_statistics_df([ds])
 >>> stats_df.loc[("MovieGraphBenchmark","moviegraphbenchmark_multi","imdb")]
                                                             Entities  Relation Triples  Attribute Triples  ...  Clusters  Intra-dataset Matches  All Matches

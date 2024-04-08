@@ -10,8 +10,8 @@ from .base import (
     TrainTestValSplit,
     ZipEADataset,
     ZipEADatasetWithPreSplitFolds,
-    create_statistics_df,
 )
+from .create_statistic import create_statistics_df
 from .id_mapped import IdMappedEADataset
 from .med_bbk_loader import MED_BBK
 from .moviegraph_benchmark_loader import MovieGraphBenchmark
