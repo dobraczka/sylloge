@@ -14,7 +14,7 @@ from .base import (
 MED_BBK_MODULE = BASE_DATASET_MODULE.module("med_bbk")
 
 
-class MED_BBK(BinaryZipEADataset[DataFrameType]):
+class MED_BBK(BinaryZipEADataset[DataFrameType, DataFrameType]):
     """Class containing the MED-BBK dataset.
 
     Published in `Zhang, Z. et. al. (2020) An Industry Evaluation of Embedding-based Entity Alignment <A Benchmarking Study of Embedding-based Entity Alignment for Knowledge Graphs>`_,
@@ -76,6 +76,7 @@ class MED_BBK(BinaryZipEADataset[DataFrameType]):
             inner_path=pathlib.PurePosixPath(inner_path),
             backend=backend,  # type: ignore[arg-type]
             dataset_names=("MED", "BBK"),
+            use_cluster_helper=False,
         )
 
     def initial_read(self, backend: BACKEND_LITERAL) -> Dict[str, Any]:

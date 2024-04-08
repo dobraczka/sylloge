@@ -84,13 +84,14 @@ def test_movie_benchmark(params: Dict, statistic: EATaskStatistics):
         total_links = statistic.num_ent_links + sum(statistic.num_intra_ent_links)
         assert ds.ent_links.number_of_links == total_links
         assert ds.ent_links.number_of_no_intra_links == statistic.num_ent_links
-    assert ds.folds is not None
-    if params["graph_pair"] == IMDB_TMDB:
-        _test_fold_number(ds.folds, (434, 1520, 218))
-    elif params["graph_pair"] == IMDB_TVDB:
-        _test_fold_number(ds.folds, (584, 2043, 292))
-    elif params["graph_pair"] == TMDB_TVDB:
-        _test_fold_number(ds.folds, (682, 2388, 341), (20, 70, 10))
+    if params["graph_pair"] != MULTI:
+        assert ds.folds is not None
+        if params["graph_pair"] == IMDB_TMDB:
+            _test_fold_number(ds.folds, (434, 1520, 218))
+        elif params["graph_pair"] == IMDB_TVDB:
+            _test_fold_number(ds.folds, (584, 2043, 292))
+        elif params["graph_pair"] == TMDB_TVDB:
+            _test_fold_number(ds.folds, (682, 2388, 341), (20, 70, 10))
 
 
 @pytest.mark.parametrize(("params", "statistic"), statistics_with_params)
@@ -117,7 +118,6 @@ def test_movie_benchmark_mock(
         assert ds.attr_triples is not None
         assert ds.attr_triples is not None
         assert ds.ent_links is not None
-        assert ds.folds is not None
         if ds.graph_pair == IMDB_TMDB:
             assert ds.dataset_names == ("imdb", "tmdb")
         elif ds.graph_pair == IMDB_TVDB:
@@ -126,11 +126,12 @@ def test_movie_benchmark_mock(
             assert ds.dataset_names == ("tmdb", "tvdb")
         elif ds.graph_pair == MULTI:
             assert ds.dataset_names == ("imdb", "tmdb", "tvdb")
-        for fold in ds.folds:
-            assert fold.train is not None
-            assert fold.test is not None
-            assert fold.val is not None
         assert ds._ds_prefixes is not None
         if ds.graph_pair != MULTI:
             assert "triples_left" in ds.__repr__()
             assert ds.rel_triples_left is not None
+            assert ds.folds is not None
+            for fold in ds.folds:
+                assert fold.train is not None
+                assert fold.test is not None
+                assert fold.val is not None

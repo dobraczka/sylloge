@@ -36,7 +36,7 @@ V2: GraphVersion = "V2"
 GRAPH_VERSIONS = (V1, V2)
 
 
-class OpenEA(BinaryZipEADatasetWithPreSplitFolds[DataFrameType]):
+class OpenEA(BinaryZipEADatasetWithPreSplitFolds[DataFrameType, DataFrameType]):
     """Class containing the OpenEA dataset family.
 
     Published in `Sun, Z. et. al. (2020) A Benchmarking Study of Embedding-based Entity Alignment for Knowledge Graphs <http://www.vldb.org/pvldb/vol13/p2326-sun.pdf>`_,
@@ -151,6 +151,7 @@ class OpenEA(BinaryZipEADatasetWithPreSplitFolds[DataFrameType]):
             backend=backend,  # type: ignore[arg-type]
             dataset_names=OpenEA._GRAPH_PAIR_TO_DS_NAMES[graph_pair],
             ds_prefix_tuples=OpenEA._GRAPH_PAIR_TO_PREFIXES[graph_pair],
+            use_cluster_helper=False,
         )
 
     @property
