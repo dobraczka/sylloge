@@ -3,7 +3,7 @@ import logging
 import os
 import pathlib
 from abc import abstractmethod
-from collections import OrderedDict, defaultdict
+from collections import defaultdict
 from dataclasses import dataclass
 from glob import glob
 from typing import (
@@ -16,6 +16,7 @@ from typing import (
     Literal,
     Mapping,
     Optional,
+    OrderedDict,
     Sequence,
     Tuple,
     Union,
@@ -26,9 +27,9 @@ from typing import (
 import dask.dataframe as dd
 import pandas as pd
 import pystow
-from eche import ClusterHelper, PrefixedClusterHelper
+from eche import PrefixedClusterHelper
 from pystow.utils import read_zipfile_csv
-from slugify import slugify
+from slugify import slugify  # type: ignore[import-untyped]
 
 from .dask_utils import read_dask_df_archive_csv
 from .my_typing import (
@@ -39,6 +40,7 @@ from .my_typing import (
     LABEL_RELATION,
     LABEL_TAIL,
     DataFrameType,
+    LinkType,
 )
 from .utils import fix_dataclass_init_docs
 
@@ -66,27 +68,27 @@ class DatasetStatistics:
 
 @fix_dataclass_init_docs
 @dataclass
-class TrainTestValSplit:
+class TrainTestValSplit(Generic[LinkType]):
     """Dataclass holding split of gold standard entity links."""
 
     #: entity links for training
-    train: ClusterHelper
+    train: LinkType
     #: entity links for testing
-    test: ClusterHelper
+    test: LinkType
     #: entity links for validation
-    val: ClusterHelper
+    val: LinkType
 
 
 @fix_dataclass_init_docs
 @dataclass
-class MultiSourceEADataset(Generic[DataFrameType]):
+class MultiSourceEADataset(Generic[DataFrameType, LinkType]):
     """Dataset class holding information of the alignment class."""
 
     rel_triples: List[DataFrameType]
     attr_triples: List[DataFrameType]
-    ent_links: ClusterHelper
+    ent_links: LinkType
     dataset_names: Tuple[str, ...]
-    folds: Optional[Sequence[TrainTestValSplit]] = None
+    folds: Optional[Sequence[TrainTestValSplit[LinkType]]] = None
 
     @property
     def _canonical_name(self) -> str:
@@ -152,7 +154,7 @@ class MultiSourceEADataset(Generic[DataFrameType]):
         return f"{self.__class__.__name__}({ds_stat_repr})"
 
 
-class ParquetEADataset(MultiSourceEADataset[DataFrameType]):
+class ParquetEADataset(MultiSourceEADataset[DataFrameType, LinkType]):
     """Dataset class holding information of the alignment task."""
 
     _REL_TRIPLES_PATH: str = "rel_triples"
@@ -166,11 +168,11 @@ class ParquetEADataset(MultiSourceEADataset[DataFrameType]):
 
     @overload
     def __init__(
-        self: "ParquetEADataset[pd.DataFrame]",
+        self: "ParquetEADataset[pd.DataFrame, LinkType]",
         *,
         rel_triples: Sequence[DataFrameType],
         attr_triples: Sequence[DataFrameType],
-        ent_links: DataFrameType,
+        ent_links: LinkType,
         dataset_names: Tuple[str, ...],
         ds_prefix_tuples: Optional[Tuple[str, ...]] = None,
         folds: Optional[Sequence[TrainTestValSplit]] = None,
@@ -180,11 +182,11 @@ class ParquetEADataset(MultiSourceEADataset[DataFrameType]):
 
     @overload
     def __init__(
-        self: "ParquetEADataset[dd.DataFrame]",
+        self: "ParquetEADataset[dd.DataFrame, LinkType]",
         *,
         rel_triples: Sequence[DataFrameType],
         attr_triples: Sequence[DataFrameType],
-        ent_links: DataFrameType,
+        ent_links: LinkType,
         dataset_names: Tuple[str, ...],
         ds_prefix_tuples: Optional[Tuple[str, ...]] = None,
         folds: Optional[Sequence[TrainTestValSplit]] = None,
@@ -197,7 +199,7 @@ class ParquetEADataset(MultiSourceEADataset[DataFrameType]):
         *,
         rel_triples: Sequence[DataFrameType],
         attr_triples: Sequence[DataFrameType],
-        ent_links: DataFrameType,
+        ent_links: LinkType,
         dataset_names: Tuple[str, ...],
         ds_prefix_tuples: Optional[Tuple[str, ...]] = None,
         folds: Optional[Sequence[TrainTestValSplit]] = None,
@@ -239,6 +241,12 @@ class ParquetEADataset(MultiSourceEADataset[DataFrameType]):
     def _triple_path_modifier(self, triple_list: List) -> List[str]:
         return [f"_{idx}_" for idx in range(len(triple_list))]
 
+    def _write_links(self, links: LinkType, path: pathlib.Path, **kwargs):
+        if isinstance(links, PrefixedClusterHelper):
+            links.to_file(path, write_cluster_id=False)
+        else:
+            links.to_parquet(f"{path}_parquet", **kwargs)
+
     def to_parquet(self, path: Union[str, pathlib.Path], **kwargs):
         """Write dataset to path as several parquet files.
 
@@ -269,7 +277,7 @@ class ParquetEADataset(MultiSourceEADataset[DataFrameType]):
                     path.joinpath(f"{table_prefix}{infix}parquet"), **kwargs
                 )
 
-        self.ent_links.to_file(path.joinpath(self.__class__._ENT_LINKS_PATH))
+        self._write_links(self.ent_links, path.joinpath(self.__class__._ENT_LINKS_PATH))
 
         # write folds
         if self.folds:
@@ -285,15 +293,32 @@ class ParquetEADataset(MultiSourceEADataset[DataFrameType]):
                         self.__class__._VAL_LINKS_PATH,
                     ],
                 ):
-                    fold_links.to_file(
-                        fold_dir.joinpath(link_path), write_cluster_id=False
-                    )
+                    self._write_links(fold_links, fold_dir.joinpath(link_path))
+
+    @classmethod
+    def _read_ch_or_df_links(
+        cls,
+        path: pathlib.Path,
+        use_cluster_helper: bool,
+        read_parquet_fn: Optional[Callable[[Any], DataFrameType]] = None,
+        ds_prefixes: Optional[OrderedDict[str, str]] = None,
+        **kwargs,
+    ) -> LinkType:
+        if use_cluster_helper:
+            assert ds_prefixes is not None
+            return PrefixedClusterHelper.from_file(path, ds_prefixes=ds_prefixes)  # type: ignore[return-value]
+        if read_parquet_fn is None:
+            raise ValueError(
+                "Need to supply read_parquet_fn if not using ClusterHelper"
+            )
+        return read_parquet_fn(f"{path}_parquet", **kwargs)  # type: ignore[return-value]
 
     @classmethod
     def _read_parquet_values(
         cls,
         path: Union[str, pathlib.Path],
         backend: BACKEND_LITERAL = "pandas",
+        use_cluster_helper: bool = False,
         **kwargs,
     ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         if not isinstance(path, pathlib.Path):
@@ -337,12 +362,13 @@ class ParquetEADataset(MultiSourceEADataset[DataFrameType]):
                 tables[table].append(
                     read_parquet_fn(path.joinpath(table_path), **kwargs)
                 )
-        if ds_prefixes is None:
-            ent_links = ClusterHelper.from_file(path.joinpath(cls._ENT_LINKS_PATH))
-        else:
-            ent_links = PrefixedClusterHelper.from_file(
-                path.joinpath(cls._ENT_LINKS_PATH), ds_prefixes=ds_prefixes
-            )
+
+        ent_links = cls._read_ch_or_df_links(
+            path.joinpath(cls._ENT_LINKS_PATH),
+            read_parquet_fn=read_parquet_fn,
+            ds_prefixes=ds_prefixes,
+            use_cluster_helper=use_cluster_helper,
+        )
 
         # read folds
         fold_path = path.joinpath(cls._FOLD_DIR)
@@ -351,7 +377,7 @@ class ParquetEADataset(MultiSourceEADataset[DataFrameType]):
             folds = []
             for tmp_fold_dir in sorted(sub_dir for sub_dir in os.listdir(fold_path)):
                 fold_dir = fold_path.joinpath(tmp_fold_dir)
-                train_test_val: Dict[str, ClusterHelper] = {}
+                train_test_val: Dict[str, LinkType] = {}
                 for links, link_path in zip(
                     ["train", "test", "val"],
                     [
@@ -360,14 +386,12 @@ class ParquetEADataset(MultiSourceEADataset[DataFrameType]):
                         cls._VAL_LINKS_PATH,
                     ],
                 ):
-                    if ds_prefixes is None:
-                        train_test_val[links] = ClusterHelper.from_file(
-                            fold_dir.joinpath(link_path)
-                        )
-                    else:
-                        train_test_val[links] = PrefixedClusterHelper.from_file(
-                            fold_dir.joinpath(link_path), ds_prefixes=ds_prefixes
-                        )
+                    train_test_val[links] = cls._read_ch_or_df_links(
+                        fold_dir.joinpath(link_path),
+                        read_parquet_fn=read_parquet_fn,
+                        ds_prefixes=ds_prefixes,
+                        use_cluster_helper=use_cluster_helper,
+                    )
                 folds.append(TrainTestValSplit(**train_test_val))
         return (
             {
@@ -387,8 +411,9 @@ class ParquetEADataset(MultiSourceEADataset[DataFrameType]):
         cls,
         path: Union[str, pathlib.Path],
         backend: Literal["dask"],
+        use_cluster_helper: Literal[False],
         **kwargs,
-    ) -> "ParquetEADataset[dd.DataFrame]":
+    ) -> "ParquetEADataset[dd.DataFrame, dd.DataFrame]":
         ...
 
     @overload
@@ -396,9 +421,32 @@ class ParquetEADataset(MultiSourceEADataset[DataFrameType]):
     def read_parquet(
         cls,
         path: Union[str, pathlib.Path],
-        backend: Literal["pandas"] = "pandas",
+        backend: Literal["pandas"],
+        use_cluster_helper: Literal[False],
         **kwargs,
-    ) -> "ParquetEADataset[pd.DataFrame]":
+    ) -> "ParquetEADataset[pd.DataFrame, pd.DataFrame]":
+        ...
+
+    @overload
+    @classmethod
+    def read_parquet(
+        cls,
+        path: Union[str, pathlib.Path],
+        backend: Literal["dask"],
+        use_cluster_helper: Literal[True],
+        **kwargs,
+    ) -> "ParquetEADataset[dd.DataFrame, PrefixedClusterHelper]":
+        ...
+
+    @overload
+    @classmethod
+    def read_parquet(
+        cls,
+        path: Union[str, pathlib.Path],
+        backend: Literal["pandas"],
+        use_cluster_helper: Literal[True],
+        **kwargs,
+    ) -> "ParquetEADataset[pd.DataFrame, PrefixedClusterHelper]":
         ...
 
     @classmethod
@@ -406,6 +454,7 @@ class ParquetEADataset(MultiSourceEADataset[DataFrameType]):
         cls,
         path: Union[str, pathlib.Path],
         backend: BACKEND_LITERAL = "pandas",
+        use_cluster_helper: bool = True,
         **kwargs,
     ) -> "ParquetEADataset":
         """Read dataset from parquet files in given `path`.
@@ -417,6 +466,7 @@ class ParquetEADataset(MultiSourceEADataset[DataFrameType]):
         :param path: Directory with files
         :param backend: Whether to use pandas or dask for reading
         :param kwargs: passed on to the respective read function
+        :param use_cluster_helper: if True uses ClusterHelper to load links
         :return: EADataset read from parquet
 
         .. seealso:: :func:`to_parquet`
@@ -429,29 +479,59 @@ class ParquetEADataset(MultiSourceEADataset[DataFrameType]):
         return instance
 
 
-class CacheableEADataset(ParquetEADataset[DataFrameType]):
+class CacheableEADataset(ParquetEADataset[DataFrameType, LinkType]):
     @overload
     def __init__(
-        self: "CacheableEADataset[pd.DataFrame]",
+        self: "CacheableEADataset[pd.DataFrame, pd.DataFrame]",
         *,
         cache_path: Union[str, pathlib.Path],
         use_cache: bool = True,
         parquet_load_options: Optional[Mapping] = None,
         parquet_store_options: Optional[Mapping] = None,
         backend: Literal["pandas"],
+        use_cluster_helper: Literal[False],
         **init_kwargs,
     ):
         ...
 
     @overload
     def __init__(
-        self: "CacheableEADataset[dd.DataFrame]",
+        self: "CacheableEADataset[dd.DataFrame, dd.DataFrame]",
         *,
         cache_path: Union[str, pathlib.Path],
         use_cache: bool = True,
         parquet_load_options: Optional[Mapping] = None,
         parquet_store_options: Optional[Mapping] = None,
         backend: Literal["dask"],
+        use_cluster_helper: Literal[False],
+        **init_kwargs,
+    ):
+        ...
+
+    @overload
+    def __init__(
+        self: "CacheableEADataset[pd.DataFrame, PrefixedClusterHelper]",
+        *,
+        cache_path: Union[str, pathlib.Path],
+        use_cache: bool = True,
+        parquet_load_options: Optional[Mapping] = None,
+        parquet_store_options: Optional[Mapping] = None,
+        backend: Literal["pandas"],
+        use_cluster_helper: Literal[True],
+        **init_kwargs,
+    ):
+        ...
+
+    @overload
+    def __init__(
+        self: "CacheableEADataset[dd.DataFrame, PrefixedClusterHelper]",
+        *,
+        cache_path: Union[str, pathlib.Path],
+        use_cache: bool = True,
+        parquet_load_options: Optional[Mapping] = None,
+        parquet_store_options: Optional[Mapping] = None,
+        backend: Literal["dask"],
+        use_cluster_helper: Literal[True],
         **init_kwargs,
     ):
         ...
@@ -464,6 +544,7 @@ class CacheableEADataset(ParquetEADataset[DataFrameType]):
         parquet_load_options: Optional[Mapping] = None,
         parquet_store_options: Optional[Mapping] = None,
         backend: BACKEND_LITERAL = "pandas",
+        use_cluster_helper: bool = False,
         **init_kwargs,
     ):
         """EADataset that uses caching after initial read.
@@ -473,6 +554,7 @@ class CacheableEADataset(ParquetEADataset[DataFrameType]):
         :param parquet_load_options: handed through to parquet loading function
         :param parquet_store_options: handed through to parquet writing function
         :param backend: Whether to use pandas or dask for reading/writing
+        :param use_cluster_helper: if True uses ClusterHelper to load links
         :param init_kwargs: other arguments for creating the EADataset instance
         """
         if isinstance(cache_path, str):
@@ -480,6 +562,7 @@ class CacheableEADataset(ParquetEADataset[DataFrameType]):
         self.cache_path = cache_path
         self.parquet_load_options = parquet_load_options or {}
         self.parquet_store_options = parquet_store_options or {}
+        self.use_cluster_helper = use_cluster_helper
         update_cache = False
         additional_kwargs: Dict[str, Any] = {}
 
@@ -497,7 +580,7 @@ class CacheableEADataset(ParquetEADataset[DataFrameType]):
             if self.cache_path.exists() and os.listdir(self.cache_path):
                 logger.info(f"Loading from cache at {self.cache_path}")
                 ea_ds_kwargs, new_additional_kwargs = self.load_from_cache(
-                    backend=backend
+                    backend=backend, use_cluster_helper=self.use_cluster_helper
                 )
                 init_kwargs.update(ea_ds_kwargs)
                 additional_kwargs.update(new_additional_kwargs)
@@ -534,10 +617,10 @@ class CacheableEADataset(ParquetEADataset[DataFrameType]):
         return cache_path.joinpath(inner_cache_path)
 
     def load_from_cache(
-        self, backend: BACKEND_LITERAL = "pandas"
+        self, backend: BACKEND_LITERAL = "pandas", use_cluster_helper: bool = False
     ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         return self.__class__._read_parquet_values(
-            path=self.cache_path, backend=backend
+            path=self.cache_path, backend=backend, use_cluster_helper=use_cluster_helper
         )
 
     @abstractmethod
@@ -548,12 +631,12 @@ class CacheableEADataset(ParquetEADataset[DataFrameType]):
         self.to_parquet(self.cache_path, **self.parquet_store_options)
 
 
-class ZipEADataset(CacheableEADataset[DataFrameType]):
+class ZipEADataset(CacheableEADataset[DataFrameType, LinkType]):
     """Dataset created from zip file which is downloaded."""
 
     @overload
     def __init__(
-        self: "ZipEADataset[pd.DataFrame]",
+        self: "ZipEADataset[pd.DataFrame, pd.DataFrame]",
         *,
         cache_path: pathlib.Path,
         zip_path: str,
@@ -564,13 +647,14 @@ class ZipEADataset(CacheableEADataset[DataFrameType]):
         file_names_attr_triples: Sequence[str] = ("attr_triples_1", "attr_triples_2"),
         file_name_ent_links: str = "ent_links",
         backend: Literal["pandas"],
+        use_cluster_helper: Literal[False],
         use_cache: bool = True,
     ):
         ...
 
     @overload
     def __init__(
-        self: "ZipEADataset[dd.DataFrame]",
+        self: "ZipEADataset[dd.DataFrame, dd.DataFrame]",
         *,
         cache_path: pathlib.Path,
         zip_path: str,
@@ -581,6 +665,43 @@ class ZipEADataset(CacheableEADataset[DataFrameType]):
         file_names_attr_triples: Sequence[str] = ("attr_triples_1", "attr_triples_2"),
         file_name_ent_links: str = "ent_links",
         backend: Literal["dask"],
+        use_cluster_helper: Literal[False],
+        use_cache: bool = True,
+    ):
+        ...
+
+    @overload
+    def __init__(
+        self: "ZipEADataset[pd.DataFrame, PrefixedClusterHelper]",
+        *,
+        cache_path: pathlib.Path,
+        zip_path: str,
+        inner_path: pathlib.PurePosixPath,
+        dataset_names: Tuple[str, ...],
+        ds_prefix_tuples: Optional[Tuple[str, ...]] = None,
+        file_names_rel_triples: Sequence[str] = ("rel_triples_1", "rel_triples_2"),
+        file_names_attr_triples: Sequence[str] = ("attr_triples_1", "attr_triples_2"),
+        file_name_ent_links: str = "ent_links",
+        backend: Literal["pandas"],
+        use_cluster_helper: Literal[True],
+        use_cache: bool = True,
+    ):
+        ...
+
+    @overload
+    def __init__(
+        self: "ZipEADataset[dd.DataFrame, PrefixedClusterHelper]",
+        *,
+        cache_path: pathlib.Path,
+        zip_path: str,
+        inner_path: pathlib.PurePosixPath,
+        dataset_names: Tuple[str, ...],
+        ds_prefix_tuples: Optional[Tuple[str, ...]] = None,
+        file_names_rel_triples: Sequence[str] = ("rel_triples_1", "rel_triples_2"),
+        file_names_attr_triples: Sequence[str] = ("attr_triples_1", "attr_triples_2"),
+        file_name_ent_links: str = "ent_links",
+        backend: Literal["dask"],
+        use_cluster_helper: Literal[True],
         use_cache: bool = True,
     ):
         ...
@@ -597,6 +718,7 @@ class ZipEADataset(CacheableEADataset[DataFrameType]):
         file_names_attr_triples: Sequence[str] = ("attr_triples_1", "attr_triples_2"),
         file_name_ent_links: str = "ent_links",
         backend: BACKEND_LITERAL = "pandas",
+        use_cluster_helper: bool = False,
         use_cache: bool = True,
     ):
         """Initialize ZipEADataset.
@@ -622,12 +744,13 @@ class ZipEADataset(CacheableEADataset[DataFrameType]):
             if ds_prefix_tuples is not None
             else None
         )
-        super().__init__(  # type: ignore[misc]
+        super().__init__(  # type: ignore[misc, call-overload]
             dataset_names=dataset_names,
             cache_path=cache_path,
             backend=backend,  # type: ignore[arg-type]
             use_cache=use_cache,
             ds_prefix_tuples=ds_prefix_tuples,
+            use_cluster_helper=use_cluster_helper,  # type: ignore[arg-type]
         )
 
     def initial_read(self, backend: BACKEND_LITERAL) -> Dict[str, Any]:
@@ -652,23 +775,19 @@ class ZipEADataset(CacheableEADataset[DataFrameType]):
         file_name: Union[str, pathlib.Path],
         sep: str = "\t",
         encoding: str = "utf8",
-    ) -> ClusterHelper:
-        if self._ds_prefixes is not None:
-            return PrefixedClusterHelper.from_zipped_file(
-                path=self.zip_path,
-                inner_path=str(inner_folder.joinpath(file_name)),
-                has_cluster_id=False,
-                sep=sep,
-                encoding=encoding,
-                ds_prefixes=self._ds_prefixes,
-            )
-        return ClusterHelper.from_zipped_file(
+        backend: BACKEND_LITERAL = "pandas",
+    ) -> LinkType:
+        if not self.use_cluster_helper:
+            return self._read_triples(file_name, backend, True)  # type: ignore[return-value]
+        assert self._ds_prefixes is not None
+        return PrefixedClusterHelper.from_zipped_file(
             path=self.zip_path,
             inner_path=str(inner_folder.joinpath(file_name)),
             has_cluster_id=False,
             sep=sep,
             encoding=encoding,
-        )
+            ds_prefixes=self._ds_prefixes,
+        )  # type: ignore[return-value]
 
     @overload
     def _read_triples(
@@ -718,12 +837,12 @@ class ZipEADataset(CacheableEADataset[DataFrameType]):
         return cast(DataFrameType, trip)
 
 
-class ZipEADatasetWithPreSplitFolds(ZipEADataset[DataFrameType]):
+class ZipEADatasetWithPreSplitFolds(ZipEADataset[DataFrameType, LinkType]):
     """Dataset with pre-split folds created from zip file which is downloaded."""
 
     @overload
     def __init__(
-        self: "ZipEADatasetWithPreSplitFolds[pd.DataFrame]",
+        self: "ZipEADatasetWithPreSplitFolds[pd.DataFrame, pd.DataFrame]",
         *,
         cache_path: pathlib.Path,
         zip_path: str,
@@ -734,6 +853,7 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset[DataFrameType]):
         file_names_attr_triples: Sequence[str] = ("attr_triples_1", "attr_triples_2"),
         file_name_ent_links: str = "ent_links",
         backend: Literal["pandas"],
+        use_cluster_helper: Literal[False],
         directory_name_folds: str = "721_5fold",
         directory_names_individual_folds: Sequence[str] = ("1", "2", "3", "4", "5"),
         file_name_test_links: str = "test_links",
@@ -745,7 +865,7 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset[DataFrameType]):
 
     @overload
     def __init__(
-        self: "ZipEADatasetWithPreSplitFolds[dd.DataFrame]",
+        self: "ZipEADatasetWithPreSplitFolds[dd.DataFrame, dd.DataFrame]",
         *,
         cache_path: pathlib.Path,
         zip_path: str,
@@ -756,6 +876,53 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset[DataFrameType]):
         file_names_attr_triples: Sequence[str] = ("attr_triples_1", "attr_triples_2"),
         file_name_ent_links: str = "ent_links",
         backend: Literal["dask"],
+        use_cluster_helper: Literal[False],
+        directory_name_folds: str = "721_5fold",
+        directory_names_individual_folds: Sequence[str] = ("1", "2", "3", "4", "5"),
+        file_name_test_links: str = "test_links",
+        file_name_train_links: str = "train_links",
+        file_name_valid_links: str = "valid_links",
+        use_cache: bool = True,
+    ):
+        ...
+
+    @overload
+    def __init__(
+        self: "ZipEADatasetWithPreSplitFolds[pd.DataFrame, PrefixedClusterHelper]",
+        *,
+        cache_path: pathlib.Path,
+        zip_path: str,
+        inner_path: pathlib.PurePosixPath,
+        dataset_names: Tuple[str, ...],
+        ds_prefix_tuples: Optional[Tuple[str, ...]] = None,
+        file_names_rel_triples: Sequence[str] = ("rel_triples_1", "rel_triples_2"),
+        file_names_attr_triples: Sequence[str] = ("attr_triples_1", "attr_triples_2"),
+        file_name_ent_links: str = "ent_links",
+        backend: Literal["pandas"],
+        use_cluster_helper: Literal[True],
+        directory_name_folds: str = "721_5fold",
+        directory_names_individual_folds: Sequence[str] = ("1", "2", "3", "4", "5"),
+        file_name_test_links: str = "test_links",
+        file_name_train_links: str = "train_links",
+        file_name_valid_links: str = "valid_links",
+        use_cache: bool = True,
+    ):
+        ...
+
+    @overload
+    def __init__(
+        self: "ZipEADatasetWithPreSplitFolds[dd.DataFrame, PrefixedClusterHelper]",
+        *,
+        cache_path: pathlib.Path,
+        zip_path: str,
+        inner_path: pathlib.PurePosixPath,
+        dataset_names: Tuple[str, ...],
+        ds_prefix_tuples: Optional[Tuple[str, ...]] = None,
+        file_names_rel_triples: Sequence[str] = ("rel_triples_1", "rel_triples_2"),
+        file_names_attr_triples: Sequence[str] = ("attr_triples_1", "attr_triples_2"),
+        file_name_ent_links: str = "ent_links",
+        backend: Literal["dask"],
+        use_cluster_helper: Literal[True],
         directory_name_folds: str = "721_5fold",
         directory_names_individual_folds: Sequence[str] = ("1", "2", "3", "4", "5"),
         file_name_test_links: str = "test_links",
@@ -777,6 +944,7 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset[DataFrameType]):
         file_names_attr_triples: Sequence[str] = ("attr_triples_1", "attr_triples_2"),
         file_name_ent_links: str = "ent_links",
         backend: BACKEND_LITERAL = "pandas",
+        use_cluster_helper: bool = False,
         directory_name_folds: str = "721_5fold",
         directory_names_individual_folds: Sequence[str] = ("1", "2", "3", "4", "5"),
         file_name_test_links: str = "test_links",
@@ -810,12 +978,13 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset[DataFrameType]):
         self.file_name_test_links = file_name_test_links
         self.file_name_valid_links = file_name_valid_links
 
-        super().__init__(  # type: ignore[misc]
+        super().__init__(  # type: ignore[misc, call-overload]
             dataset_names=dataset_names,
             zip_path=zip_path,
             inner_path=inner_path,
             cache_path=cache_path,
             backend=backend,  # type: ignore[arg-type]
+            use_cluster_helper=use_cluster_helper,
             use_cache=use_cache,
             file_names_rel_triples=file_names_rel_triples,
             file_names_attr_triples=file_names_attr_triples,
@@ -827,17 +996,32 @@ class ZipEADatasetWithPreSplitFolds(ZipEADataset[DataFrameType]):
         base_dict = super().initial_read(backend=backend)
         folds = []
         for fold in self.directory_names_individual_folds:
-            fold_folder = self.inner_path.joinpath(
-                pathlib.Path(self.directory_name_folds).joinpath(fold)
+            fold_folder = pathlib.Path(self.directory_name_folds).joinpath(fold)
+            train = self._read_triples(
+                str(fold_folder.joinpath(self.file_name_train_links)),
+                is_links=True,
+                backend=backend,
             )
-            train = self._read_links(fold_folder, self.file_name_train_links)
-            test = self._read_links(fold_folder, self.file_name_test_links)
-            val = self._read_links(fold_folder, self.file_name_valid_links)
-            folds.append(TrainTestValSplit(train=train, test=test, val=val))
+            test = self._read_triples(
+                str(fold_folder.joinpath(self.file_name_test_links)),
+                is_links=True,
+                backend=backend,
+            )
+            val = self._read_triples(
+                str(fold_folder.joinpath(self.file_name_valid_links)),
+                is_links=True,
+                backend=backend,
+            )
+            folds.append(
+                cast(
+                    TrainTestValSplit[LinkType],
+                    TrainTestValSplit(train=train, test=test, val=val),
+                )
+            )
         return {**base_dict, "folds": folds}
 
 
-class BinaryEADataset(MultiSourceEADataset[DataFrameType]):
+class BinaryEADataset(MultiSourceEADataset[DataFrameType, LinkType]):
     """Binary class to get left and right triples easier."""
 
     @property
@@ -866,7 +1050,7 @@ class BinaryEADataset(MultiSourceEADataset[DataFrameType]):
 
 
 class BinaryParquetEADataset(
-    ParquetEADataset[DataFrameType], BinaryEADataset[DataFrameType]
+    ParquetEADataset[DataFrameType, LinkType], BinaryEADataset[DataFrameType, LinkType]
 ):
     """Binary version of ParquetEADataset."""
 
@@ -874,14 +1058,19 @@ class BinaryParquetEADataset(
         return self._binary_repr_adjustment(super().__repr__())
 
 
-class BinaryCacheableEADataset(CacheableEADataset[DataFrameType], BinaryEADataset):
+class BinaryCacheableEADataset(
+    CacheableEADataset[DataFrameType, LinkType],
+    BinaryEADataset[DataFrameType, LinkType],
+):
     """Binary version of CacheableEADataset."""
 
     def __repr__(self) -> str:
         return self._binary_repr_adjustment(super().__repr__())
 
 
-class BinaryZipEADataset(ZipEADataset[DataFrameType], BinaryEADataset):
+class BinaryZipEADataset(
+    ZipEADataset[DataFrameType, LinkType], BinaryEADataset[DataFrameType, LinkType]
+):
     """Binary version of ZipEADataset."""
 
     def __repr__(self) -> str:
@@ -889,7 +1078,8 @@ class BinaryZipEADataset(ZipEADataset[DataFrameType], BinaryEADataset):
 
 
 class BinaryZipEADatasetWithPreSplitFolds(
-    ZipEADatasetWithPreSplitFolds[DataFrameType], BinaryEADataset
+    ZipEADatasetWithPreSplitFolds[DataFrameType, LinkType],
+    BinaryEADataset[DataFrameType, LinkType],
 ):
     """Binary version of ZipEADataset."""
 

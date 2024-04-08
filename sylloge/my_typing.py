@@ -2,6 +2,7 @@ from typing import Literal, Tuple, TypeVar
 
 import dask.dataframe as dd
 import pandas as pd
+from eche import PrefixedClusterHelper
 
 # borrowed from pykeen.typing
 Target = Literal["head", "relation", "tail"]
@@ -16,3 +17,4 @@ COLUMNS = [LABEL_HEAD, LABEL_RELATION, LABEL_TAIL]
 
 BACKEND_LITERAL = Literal["pandas", "dask"]
 DataFrameType = TypeVar("DataFrameType", pd.DataFrame, dd.DataFrame)
+LinkType = TypeVar("LinkType", pd.DataFrame, dd.DataFrame, PrefixedClusterHelper)

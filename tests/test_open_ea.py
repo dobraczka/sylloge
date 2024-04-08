@@ -192,10 +192,6 @@ def test_open_ea_mock(
         "sylloge.base.read_dask_df_archive_csv", rm.mock_read_dask_df_archive_csv
     )
     mocker.patch("sylloge.open_ea_loader.OPEN_EA_MODULE.ensure", rm.mock_ensure)
-    mocker.patch(
-        "sylloge.base.PrefixedClusterHelper.from_zipped_file",
-        rm.mock_cluster_helper_from_zipped_file,
-    )
     # TODO mock zip ensure
     for use_cache, cache_exists in [(False, False), (True, False), (True, True)]:
         if cache_exists:
