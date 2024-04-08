@@ -144,7 +144,7 @@ class ResourceMocker:
                 relation_triples=False,
                 seed=self.seed,
             )
-        if "ent_links" in inner_path:
+        if "links" in inner_path:
             return dummy_df(
                 (int(self.statistic.num_ent_links * self.fraction), 2),
                 content_length=100,

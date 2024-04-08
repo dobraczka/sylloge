@@ -7,7 +7,6 @@ from typing import Any, Dict, List, Literal, NamedTuple, Optional, Tuple, Union
 
 import dask.dataframe as dd
 import pandas as pd
-from eche import PrefixedClusterHelper
 
 from .base import (
     BASE_DATASET_MODULE,
@@ -124,7 +123,7 @@ def fault_tolerant_parse_nt(
     return subj, pred, obj, triple_type
 
 
-class OAEI(BinaryCacheableEADataset[dd.DataFrame]):
+class OAEI(BinaryCacheableEADataset[dd.DataFrame, dd.DataFrame]):
     """The  OAEI (Ontology Alignment Evaluation Initiative) Knowledge Graph Track tasks contain graphs created from fandom wikis.
 
     Five integration tasks are available:
@@ -308,6 +307,7 @@ class OAEI(BinaryCacheableEADataset[dd.DataFrame]):
             dataset_names=(left_name, right_name),
             backend="dask",
             ds_prefix_tuples=TASK_NAME_TO_PREFIX[task],
+            use_cluster_helper=False,
         )
 
     def initial_read(self, backend: BACKEND_LITERAL):
@@ -332,10 +332,7 @@ class OAEI(BinaryCacheableEADataset[dd.DataFrame]):
         return {
             "rel_triples": [left_rel, right_rel],
             "attr_triples": [left_attr, right_attr],
-            "ent_links": PrefixedClusterHelper.from_numpy(
-                entity_mapping_df.to_numpy(),
-                ds_prefixes=self._ds_prefixes,
-            ),
+            "ent_links": dd.from_pandas(entity_mapping_df, npartitions=1),
         }
 
     @property
@@ -469,13 +466,14 @@ class OAEI(BinaryCacheableEADataset[dd.DataFrame]):
         cls,
         path: Union[str, pathlib.Path],
         backend: BACKEND_LITERAL = "pandas",
+        use_cluster_helper=False,
         **kwargs,
     ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         if not isinstance(path, pathlib.Path):
             path = pathlib.Path(path)
 
         init_args, additional_init_args = super()._read_parquet_values(
-            path=path, backend=backend, **kwargs
+            path=path, backend=backend, use_cluster_helper=False, **kwargs
         )
 
         for table, table_path in zip(
