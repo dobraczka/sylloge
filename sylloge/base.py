@@ -3,7 +3,7 @@ import logging
 import os
 import pathlib
 from abc import abstractmethod
-from collections import OrderedDict, defaultdict
+from collections import defaultdict
 from dataclasses import dataclass
 from glob import glob
 from typing import (
@@ -16,6 +16,7 @@ from typing import (
     Literal,
     Mapping,
     Optional,
+    OrderedDict,
     Sequence,
     Tuple,
     Union,
