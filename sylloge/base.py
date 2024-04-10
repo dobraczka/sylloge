@@ -311,6 +311,16 @@ class ParquetEADataset(MultiSourceEADataset[DataFrameType, LinkType]):
             raise ValueError(
                 "Need to supply read_parquet_fn if not using ClusterHelper"
             )
+        parquet_path = f"{path}_parquet"
+        if not os.path.exists(parquet_path) and os.path.exists(path):
+            logger.info(
+                f"Did not find {parquet_path}, but ClusterHelper file. Creating parquet file from ClusterHelper (no intra-dataset links are used!)"
+            )
+            assert ds_prefixes is not None
+            ch = PrefixedClusterHelper.from_file(path, ds_prefixes=ds_prefixes)  # type: ignore[return-value]
+            pd.DataFrame(
+                list(ch.all_pairs_no_intra()), columns=["left", "right"]
+            ).to_parquet(parquet_path)
         return read_parquet_fn(f"{path}_parquet", **kwargs)  # type: ignore[return-value]
 
     @classmethod
