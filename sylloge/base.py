@@ -318,9 +318,9 @@ class ParquetEADataset(MultiSourceEADataset[DataFrameType, LinkType]):
             )
             assert ds_prefixes is not None
             ch = PrefixedClusterHelper.from_file(path, ds_prefixes=ds_prefixes)  # type: ignore[return-value]
-            pd.DataFrame(
-                list(ch.all_pairs_no_intra()), columns=["left", "right"]
-            ).to_parquet(parquet_path)
+            pd.DataFrame(list(ch.all_pairs_no_intra()), columns=EA_SIDES).to_parquet(
+                parquet_path
+            )
         return read_parquet_fn(f"{path}_parquet", **kwargs)  # type: ignore[return-value]
 
     @classmethod
