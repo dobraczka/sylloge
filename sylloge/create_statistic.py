@@ -102,7 +102,9 @@ def create_and_write_statistic(
     seperate_attribute_relations: bool = True,
 ) -> pd.DataFrame:
     datasets = iter(cls(**args) for cls, args in classes_with_args)  # type: ignore[arg-type]
-    stats = create_statistics_df(datasets)
+    stats = create_statistics_df(
+        datasets, seperate_attribute_relations=seperate_attribute_relations
+    )
     stats.to_csv(output_path)
     print(f"Wrote stats to {output_path}")
     return stats
